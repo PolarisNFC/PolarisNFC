@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cargando...</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            background-color: #0f172a; 
+            color: #f8fafc;
+            min-height: 100vh;
+            display: flex; 
+            justify-content: center; 
+            align-items: flex-start;
+            padding: 30px 20px; 
+        }
+        .container { width: 100%; max-width: 380px; text-align: center; }
+        .profile-img { 
+            width: 96px; height: 96px; 
+            border-radius: 50%; 
+            object-fit: cover; 
+            margin-bottom: 16px; 
+            border: 3px solid #38bdf8; 
+            box-shadow: 0 10px 25px -5px rgba(56, 189, 248, 0.3); 
+        }
+        h1 { font-size: 22px; font-weight: 700; color: #ffffff; margin-bottom: 6px; }
+        p.bio { font-size: 14px; color: #94a3b8; margin-bottom: 28px; line-height: 1.4; }
+        .links-container { display: flex; flex-direction: column; gap: 14px; }
+        .btn { 
+            display: block; 
+            background: #1e293b; 
+            color: #f8fafc; 
+            padding: 16px 20px; 
+            border-radius: 14px; 
+            text-decoration: none; 
+            font-weight: 600; 
+            font-size: 15px; 
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2); 
+            transition: all 0.2s ease; 
+            border: 1px solid #334155; 
+        }
+        .btn:active { transform: scale(0.97); background: #334155; }
+        .footer { font-size: 11px; color: #64748b; margin-top: 40px; letter-spacing: 0.5px; }
+        .error-msg { background: #1e293b; padding: 20px; border-radius: 12px; border: 1px solid #334155; }
+    </style>
+</head>
+<body>
+
+    <div class="container" id="app">
+        <p style="color: #94a3b8;">Cargando perfil...</p>
+    </div>
+
+    <script>
+        async function loadProfile() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const id = urlParams.get('id') || '001';
+
+            try {
+                const response = await fetch('clients.json?v=' + new Date().getTime());
+                const data = await response.json();
+                
+                const client = data[id];
+                const app = document.getElementById('app');
+
+                if (!client) {
+                    app.innerHTML = `<div class="error-msg"><h1>Perfil no activo</h1><p style="margin-top:8px;">Este acrílico aún no está configurado.</p></div>`;
+                    return;
+                }
+
+                document.title = client.name;
+
+                let html = `
+                    <img src="${client.image}" class="profile-img" alt="${client.name}">
+                    <h1>${client.name}</h1>
+                    <p class="bio">${client.bio}</p>
+                    <div class="links-container">
+                `;
+
+                client.links.forEach(link => {
+                    html += `<a href="${link.url}" class="btn" target="_blank" rel="noopener">${link.text}</a>`;
+                });
+
+                html += `</div><div class="footer">TECNOLOGÍA INTELIGENTE PARA NEGOCIOS</div>`;
+                app.innerHTML = html;
+
+            } catch (error) {
+                document.getElementById('app').innerHTML = `<div class="error-msg"><h1>Error</h1><p>No se pudieron cargar los datos.</p></div>`;
+            }
+        }
+
+        loadProfile();
+    </script>
+</body>
+</html>
