@@ -1,0 +1,22 @@
+{
+  "001": {
+    "name": "Nombre del Negocio 001",
+    "bio": "Descripción corta o rubro",
+    "image": "https://via.placeholder.com/150",
+    "links": [
+      { "text": "⭐ Califícanos en Google Maps", "url": "https://maps.google.com" },
+      { "text": "📄 Ver Menú / Carta Digital", "url": "https://google.com" },
+      { "text": "💬 Escríbenos al WhatsApp", "url": "https://wa.me/56912345678" },
+      { "text": "📸 Síguenos en Instagram", "url": "https://instagram.com" }
+    ]
+  },
+  "002": {
+    "name": "Nombre del Negocio 002",
+    "bio": "Descripción corta o rubro",
+    "image": "https://via.placeholder.com/150",
+    "links": [
+      { "text": "⭐ Déjanos tu Reseña en Google", "url": "https://maps.google.com" },
+      { "text": "📞 Reservas por WhatsApp", "url": "https://wa.me/56987654321" }
+    ]
+  }
+}
