@@ -1,22 +1,145 @@
 {
   "001": {
-    "name": "Nombre del Negocio 001",
-    "bio": "Descripción corta o rubro",
+    "name": "Nombre Negocio 001",
+    "bio": "Bienvenido a nuestro perfil",
     "image": "https://via.placeholder.com/150",
+    "direct_url": "",
     "links": [
       { "text": "⭐ Califícanos en Google Maps", "url": "https://maps.google.com" },
-      { "text": "📄 Ver Menú / Carta Digital", "url": "https://google.com" },
-      { "text": "💬 Escríbenos al WhatsApp", "url": "https://wa.me/56912345678" },
-      { "text": "📸 Síguenos en Instagram", "url": "https://instagram.com" }
+      { "text": "💬 Escríbenos al WhatsApp", "url": "https://wa.me/" }
     ]
   },
   "002": {
-    "name": "Nombre del Negocio 002",
-    "bio": "Descripción corta o rubro",
+    "name": "Redirección Directa 002",
+    "bio": "",
+    "image": "",
+    "direct_url": "https://maps.google.com",
+    "links": []
+  },
+  "003": {
+    "name": "Nombre Negocio 003",
+    "bio": "Descripción corta",
     "image": "https://via.placeholder.com/150",
-    "links": [
-      { "text": "⭐ Déjanos tu Reseña en Google", "url": "https://maps.google.com" },
-      { "text": "📞 Reservas por WhatsApp", "url": "https://wa.me/56987654321" }
-    ]
+    "direct_url": "",
+    "links": []
+  },
+  "004": {
+    "name": "Nombre Negocio 004",
+    "bio": "Descripción corta",
+    "image": "https://via.placeholder.com/150",
+    "direct_url": "",
+    "links": []
+  },
+  "005": {
+    "name": "Nombre Negocio 005",
+    "bio": "Descripción corta",
+    "image": "https://via.placeholder.com/150",
+    "direct_url": "",
+    "links": []
+  },
+  "006": {
+    "name": "Nombre Negocio 006",
+    "bio": "Descripción corta",
+    "image": "https://via.placeholder.com/150",
+    "direct_url": "",
+    "links": []
+  },
+  "007": {
+    "name": "Nombre Negocio 007",
+    "bio": "Descripción corta",
+    "image": "https://via.placeholder.com/150",
+    "direct_url": "",
+    "links": []
+  },
+  "008": {
+    "name": "Nombre Negocio 008",
+    "bio": "Descripción corta",
+    "image": "https://via.placeholder.com/150",
+    "direct_url": "",
+    "links": []
+  },
+  "009": {
+    "name": "Nombre Negocio 009",
+    "bio": "Descripción corta",
+    "image": "https://via.placeholder.com/150",
+    "direct_url": "",
+    "links": []
+  },
+  "010": {
+    "name": "Nombre Negocio 010",
+    "bio": "Descripción corta",
+    "image": "https://via.placeholder.com/150",
+    "direct_url": "",
+    "links": []
+  },
+  "011": {
+    "name": "Nombre Negocio 011",
+    "bio": "Descripción corta",
+    "image": "https://via.placeholder.com/150",
+    "direct_url": "",
+    "links": []
+  },
+  "012": {
+    "name": "Nombre Negocio 012",
+    "bio": "Descripción corta",
+    "image": "https://via.placeholder.com/150",
+    "direct_url": "",
+    "links": []
+  },
+  "013": {
+    "name": "Nombre Negocio 013",
+    "bio": "Descripción corta",
+    "image": "https://via.placeholder.com/150",
+    "direct_url": "",
+    "links": []
+  },
+  "014": {
+    "name": "Nombre Negocio 014",
+    "bio": "Descripción corta",
+    "image": "https://via.placeholder.com/150",
+    "direct_url": "",
+    "links": []
+  },
+  "015": {
+    "name": "Nombre Negocio 015",
+    "bio": "Descripción corta",
+    "image": "https://via.placeholder.com/150",
+    "direct_url": "",
+    "links": []
+  },
+  "016": {
+    "name": "Nombre Negocio 016",
+    "bio": "Descripción corta",
+    "image": "https://via.placeholder.com/150",
+    "direct_url": "",
+    "links": []
+  },
+  "017": {
+    "name": "Nombre Negocio 017",
+    "bio": "Descripción corta",
+    "image": "https://via.placeholder.com/150",
+    "direct_url": "",
+    "links": []
+  },
+  "018": {
+    "name": "Nombre Negocio 018",
+    "bio": "Descripción corta",
+    "image": "https://via.placeholder.com/150",
+    "direct_url": "",
+    "links": []
+  },
+  "019": {
+    "name": "Nombre Negocio 019",
+    "bio": "Descripción corta",
+    "image": "https://via.placeholder.com/150",
+    "direct_url": "",
+    "links": []
+  },
+  "020": {
+    "name": "Nombre Negocio 020",
+    "bio": "Descripción corta",
+    "image": "https://via.placeholder.com/150",
+    "direct_url": "",
+    "links": []
   }
 }
