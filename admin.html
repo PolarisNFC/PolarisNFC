@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Editor · Polaris NFC</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: #0f172a; color: #f8fafc; min-height: 100vh; padding: 20px 16px 80px;
+  }
+  .wrap { max-width: 640px; margin: 0 auto; }
+  h1 { font-size: 20px; font-weight: 700; }
+  h2 { font-size: 15px; font-weight: 700; margin: 22px 0 10px; color: #cbd5e1; }
+  .muted { color: #94a3b8; font-size: 13px; line-height: 1.5; }
+  .topbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; }
+  .card { background: #1e293b; border: 1px solid #334155; border-radius: 14px; padding: 18px; }
+  label { display: block; font-size: 12px; font-weight: 600; color: #94a3b8; margin: 14px 0 6px; text-transform: uppercase; letter-spacing: .4px; }
+  input[type=text], input[type=url], input[type=password], input[type=search], textarea {
+    width: 100%; background: #0f172a; border: 1px solid #334155; color: #f8fafc;
+    padding: 12px; border-radius: 10px; font-size: 15px; font-family: inherit;
+  }
+  textarea { resize: vertical; min-height: 64px; }
+  input:focus, textarea:focus { outline: 2px solid #38bdf8; border-color: transparent; }
+  button, .btn {
+    background: #334155; color: #f8fafc; border: 0; padding: 10px 14px; border-radius: 10px;
+    font-size: 14px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;
+  }
+  button:active, .btn:active { transform: scale(.97); }
+  button:disabled { opacity: .5; cursor: wait; }
+  .primary { background: #38bdf8; color: #0f172a; }
+  .danger { background: transparent; color: #f87171; border: 1px solid #7f1d1d; }
+  .ghost { background: transparent; border: 1px solid #334155; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .list { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+  .item {
+    display: flex; align-items: center; gap: 12px; background: #1e293b; border: 1px solid #334155;
+    border-radius: 12px; padding: 12px; cursor: pointer;
+  }
+  .item:hover { border-color: #38bdf8; }
+  .item .id { font-family: ui-monospace, monospace; color: #38bdf8; font-weight: 700; width: 38px; }
+  .item .name { flex: 1; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .badge { font-size: 11px; padding: 4px 8px; border-radius: 99px; font-weight: 700; white-space: nowrap; }
+  .b-hub { background: #0c4a6e; color: #7dd3fc; }
+  .b-red { background: #422006; color: #fcd34d; }
+  .b-off { background: #1f2937; color: #6b7280; }
+  .thumb { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; background: #334155; flex-shrink: 0; }
+  .preview-img { width: 88px; height: 88px; border-radius: 50%; object-fit: cover; border: 3px solid #38bdf8; background: #334155; }
+  .seg { display: flex; background: #0f172a; border: 1px solid #334155; border-radius: 12px; padding: 4px; gap: 4px; }
+  .seg button { flex: 1; background: transparent; justify-content: center; }
+  .seg button.on { background: #38bdf8; color: #0f172a; }
+  .link-row { background: #0f172a; border: 1px solid #334155; border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+  .link-row .ctrl { display: flex; gap: 6px; justify-content: flex-end; }
+  .link-row .ctrl button { padding: 6px 10px; font-size: 13px; }
+  .presets { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+  .presets button { font-size: 12px; padding: 7px 10px; }
+  .savebar {
+    position: fixed; left: 0; right: 0; bottom: 0; background: #0f172aee; backdrop-filter: blur(6px);
+    border-top: 1px solid #334155; padding: 12px 16px;
+  }
+  .savebar .wrap { display: flex; gap: 8px; justify-content: space-between; }
+  #toast {
+    position: fixed; top: 16px; left: 50%; transform: translateX(-50%); background: #1e293b; border: 1px solid #334155;
+    padding: 12px 16px; border-radius: 12px; font-size: 14px; display: none; z-index: 10; max-width: 90vw; text-align: center;
+  }
+  #toast.ok { border-color: #22c55e; } #toast.err { border-color: #ef4444; }
+  .hint { font-size: 12px; color: #64748b; margin-top: 6px; line-height: 1.4; }
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<div id="toast"></div>
+
+<script>
+/* ============ CONFIG ============ */
+const LS_KEY = 'polaris_admin_cfg';
+const FILE = 'clients.json';
+const IMG_DIR = 'img';
+let cfg = null;
+try { cfg = JSON.parse(localStorage.getItem(LS_KEY) || 'null'); } catch (e) {}
+
+let data = {};          // clients.json completo
+let draft = null;       // perfil que se está editando
+let draftId = null;
+let mode = 'hub';       // 'hub' | 'redirect'
+let previewSrc = '';    // preview local de imagen recién subida
+
+const app = document.getElementById('app');
+
+/* ============ UTILIDADES ============ */
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+function toast(msg, type = 'ok', ms = 3000) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = type; t.style.display = 'block';
+  clearTimeout(t._h); t._h = setTimeout(() => t.style.display = 'none', ms);
+}
+
+function b64ToUtf8(b64) {
+  const bin = atob(b64.replace(/\s/g, ''));
+  return new TextDecoder().decode(Uint8Array.from(bin, c => c.charCodeAt(0)));
+}
+function utf8ToB64(str) {
+  const bytes = new TextEncoder().encode(str);
+  let bin = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+  return btoa(bin);
+}
+
+function normalizeUrl(u) {
+  u = (u || '').trim();
+  if (!u) return '';
+  if (/^(https?:|mailto:|tel:)/i.test(u)) return u;
+  return 'https://' + u.replace(/^\/+/, '');
+}
+
+function publicUrl(id) { return new URL('./?id=' + encodeURIComponent(id), location.href).href; }
+function imgUrl(src) {
+  if (!src) return '';
+  try { return new URL(src, location.href).href; } catch (e) { return src; }
+}
+
+function status(c) {
+  if (c.direct_url && c.direct_url.trim()) return { cls: 'b-red', txt: 'Redirección' };
+  if (c.links && c.links.length) return { cls: 'b-hub', txt: `Hub · ${c.links.length} link${c.links.length > 1 ? 's' : ''}` };
+  return { cls: 'b-off', txt: 'Sin configurar' };
+}
+
+/* ============ API GITHUB ============ */
+async function gh(path, opts = {}) {
+  const r = await fetch(`https://api.github.com/repos/${cfg.owner}/${cfg.repo}/${path}`, {
+    ...opts,
+    cache: 'no-store',
+    headers: {
+      Authorization: `Bearer ${cfg.token}`,
+      Accept: 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28',
+      ...(opts.headers || {})
+    }
+  });
+  if (!r.ok) {
+    const j = await r.json().catch(() => ({}));
+    const e = new Error(j.message || ('HTTP ' + r.status)); e.status = r.status; throw e;
+  }
+  return r.json();
+}
+
+async function fetchClients() {
+  const j = await gh(`contents/${FILE}?ref=${encodeURIComponent(cfg.branch)}&t=${Date.now()}`);
+  return { json: JSON.parse(b64ToUtf8(j.content)), sha: j.sha };
+}
+
+// Guarda SOLO el perfil editado sobre la versión más reciente del archivo (evita pisar otros cambios)
+async function saveProfile(id, obj) {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const { json, sha } = await fetchClients();
+    json[id] = obj;
+    try {
+      await gh(`contents/${FILE}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          message: `Actualiza perfil ${id}${obj.name ? ' (' + obj.name + ')' : ''}`,
+          content: utf8ToB64(JSON.stringify(json, null, 2) + '\n'),
+          sha, branch: cfg.branch
+        })
+      });
+      data = json;
+      return;
+    } catch (e) {
+      if (e.status === 409 && attempt < 2) continue; // alguien guardó al mismo tiempo: reintenta
+      throw e;
+    }
+  }
+}
+
+async function uploadImage(file, id) {
+  const dataUrl = await resizeImage(file, 400);
+  const path = `${IMG_DIR}/${id}-${Date.now()}.jpg`;
+  await gh(`contents/${path}`, {
+    method: 'PUT',
+    body: JSON.stringify({ message: `Imagen perfil ${id}`, content: dataUrl.split(',')[1], branch: cfg.branch })
+  });
+  return { path, dataUrl };
+}
+
+function resizeImage(file, size) {
+  return new Promise((res, rej) => {
+    const img = new Image();
+    img.onload = () => {
+      const s = Math.min(img.width, img.height);           // recorte cuadrado centrado
+      const c = document.createElement('canvas'); c.width = c.height = size;
+      c.getContext('2d').drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, size, size);
+      res(c.toDataURL('image/jpeg', 0.85));
+      URL.revokeObjectURL(img.src);
+    };
+    img.onerror = () => rej(new Error('No se pudo leer la imagen'));
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+/* ============ VISTA: CONEXIÓN ============ */
+function renderSetup(errMsg) {
+  const c = cfg || {};
+  app.innerHTML = `
+    <div class="topbar"><h1>Polaris NFC · Editor</h1></div>
+    <div class="card">
+      <p class="muted">Conecta este dispositivo con tu repositorio de GitHub. Solo se hace una vez por dispositivo; el token queda guardado únicamente en este navegador.</p>
+      ${errMsg ? `<p style="color:#f87171;margin-top:12px;font-size:14px;">${esc(errMsg)}</p>` : ''}
+      <form id="f">
+        <label>Usuario u organización de GitHub</label>
+        <input type="text" id="owner" value="${esc(c.owner || guessOwner())}" required autocapitalize="off">
+        <label>Nombre del repositorio</label>
+        <input type="text" id="repo" value="${esc(c.repo || guessRepo())}" required autocapitalize="off">
+        <label>Rama</label>
+        <input type="text" id="branch" value="${esc(c.branch || 'main')}" required autocapitalize="off">
+        <label>Token de acceso (fine-grained)</label>
+        <input type="password" id="token" value="${esc(c.token || '')}" required autocomplete="off">
+        <p class="hint">Permiso necesario: <b>Contents → Read and write</b>, solo para este repositorio.</p>
+        <div class="row" style="margin-top:18px;"><button class="primary" type="submit" id="go">Conectar</button></div>
+      </form>
+    </div>`;
+  document.getElementById('f').onsubmit = async ev => {
+    ev.preventDefault();
+    const btn = document.getElementById('go'); btn.disabled = true; btn.textContent = 'Conectando...';
+    cfg = {
+      owner: document.getElementById('owner').value.trim(),
+      repo: document.getElementById('repo').value.trim(),
+      branch: document.getElementById('branch').value.trim() || 'main',
+      token: document.getElementById('token').value.trim()
+    };
+    try {
+      const { json } = await fetchClients();
+      data = json;
+      localStorage.setItem(LS_KEY, JSON.stringify(cfg));
+      toast('Conectado ✔');
+      renderList();
+    } catch (e) {
+      renderSetup('No se pudo conectar: ' + e.message + '. Revisa usuario, repo, rama y token.');
+    }
+  };
+}
+function guessOwner() { const m = location.hostname.match(/^([^.]+)\.github\.io$/); return m ? m[1] : ''; }
+function guessRepo() { const p = location.pathname.split('/').filter(Boolean); return location.hostname.endsWith('github.io') && p.length > 1 ? p[0] : ''; }
+
+/* ============ VISTA: LISTA DE PERFILES ============ */
+function renderList(filter = '') {
+  draft = null; draftId = null; previewSrc = '';
+  const ids = Object.keys(data).sort();
+  const f = filter.toLowerCase();
+  const rows = ids.filter(id => !f || id.includes(f) || (data[id].name || '').toLowerCase().includes(f)).map(id => {
+    const c = data[id]; const s = status(c);
+    return `<div class="item" data-id="${esc(id)}">
+      ${c.image ? `<img class="thumb" src="${esc(imgUrl(c.image))}" alt="" onerror="this.style.visibility='hidden'">` : `<div class="thumb"></div>`}
+      <span class="id">${esc(id)}</span>
+      <span class="name">${esc(c.name || '(sin nombre)')}</span>
+      <span class="badge ${s.cls}">${s.txt}</span>
+    </div>`;
+  }).join('');
+  app.innerHTML = `
+    <div class="topbar">
+      <h1>Perfiles <span class="muted">(${ids.length})</span></h1>
+      <div class="row">
+        <button class="ghost" id="reload">↻ Recargar</button>
+        <button class="ghost" id="new">+ Nuevo</button>
+        <button class="ghost" id="logout" title="Borrar token de este dispositivo">Salir</button>
+      </div>
+    </div>
+    <input type="search" id="q" placeholder="Buscar por número o nombre..." value="${esc(filter)}">
+    <div class="list">${rows || '<p class="muted">Sin resultados.</p>'}</div>`;
+  const q = document.getElementById('q');
+  q.oninput = () => { const pos = q.selectionStart; renderList(q.value); const n = document.getElementById('q'); n.focus(); n.setSelectionRange(pos, pos); };
+  app.querySelectorAll('.item').forEach(el => el.onclick = () => renderEdit(el.dataset.id));
+  document.getElementById('reload').onclick = async () => {
+    try { data = (await fetchClients()).json; renderList(filter); toast('Actualizado'); } catch (e) { toast(e.message, 'err'); }
+  };
+  document.getElementById('new').onclick = () => {
+    const max = Math.max(0, ...Object.keys(data).map(k => parseInt(k, 10)).filter(n => !isNaN(n)));
+    const id = String(max + 1).padStart(3, '0');
+    if (!confirm(`Crear perfil nuevo ${id}?\nOJO: necesitará un QR/NFC nuevo apuntando a:\n${publicUrl(id)}`)) return;
+    renderEdit(id, { name: '', bio: '', image: '', direct_url: '', links: [] });
+  };
+  document.getElementById('logout').onclick = () => {
+    if (!confirm('¿Borrar la conexión (token) de este dispositivo?')) return;
+    localStorage.removeItem(LS_KEY); cfg = null; renderSetup();
+  };
+}
+
+/* ============ VISTA: EDITOR DE PERFIL ============ */
+const PRESETS = [
+  { label: '📸 Instagram', text: '📸 Síguenos en Instagram', url: 'https://instagram.com/' },
+  { label: '📍 Cómo llegar', text: '📍 Cómo llegar', url: 'https://maps.app.goo.gl/' },
+  { label: '⭐ Reseña Google', text: '⭐ Califícanos en Google', url: 'https://g.page/r/' },
+  { label: '💬 WhatsApp', text: '💬 Escríbenos al WhatsApp', url: 'https://wa.me/569' },
+  { label: '🎵 TikTok', text: '🎵 Síguenos en TikTok', url: 'https://tiktok.com/@' },
+  { label: '📋 Menú', text: '📋 Ver menú', url: 'https://' },
+  { label: '🌐 Web', text: '🌐 Visita nuestra web', url: 'https://' },
+];
+
+function renderEdit(id, fresh) {
+  draftId = id;
+  draft = JSON.parse(JSON.stringify(fresh || data[id] || {}));
+  draft.links = Array.isArray(draft.links) ? draft.links : [];
+  mode = draft.direct_url && draft.direct_url.trim() ? 'redirect' : 'hub';
+  previewSrc = '';
+  drawEdit(!!fresh);
+}
+
+function drawEdit(isNew) {
+  const d = draft;
+  const img = previewSrc || imgUrl(d.image);
+  app.innerHTML = `
+    <div class="topbar">
+      <button class="ghost" id="back">← Volver</button>
+      <div class="row">
+        ${isNew ? '' : `<a class="btn ghost" href="${esc(publicUrl(draftId))}" target="_blank" rel="noopener">Ver perfil ↗</a>`}
+        <button class="ghost" id="copy">Copiar link</button>
+      </div>
+    </div>
+    <h1>Perfil <span style="color:#38bdf8">${esc(draftId)}</span></h1>
+    <p class="muted" style="margin-top:4px;word-break:break-all;">${esc(publicUrl(draftId))}</p>
+
+    <h2>¿Qué hace este QR / NFC?</h2>
+    <div class="seg">
+      <button id="m-hub" class="${mode === 'hub' ? 'on' : ''}">Página con botones</button>
+      <button id="m-red" class="${mode === 'redirect' ? 'on' : ''}">Redirigir directo a 1 link</button>
+    </div>
+
+    <div class="card" style="margin-top:14px;">
+      <label>Nombre del negocio</label>
+      <input type="text" id="name" value="${esc(d.name)}" placeholder="Ej: Café Las Rocas">
+
+      <div id="redirect-box" style="display:${mode === 'redirect' ? 'block' : 'none'}">
+        <label>Link de destino</label>
+        <input type="url" id="direct" value="${esc(d.direct_url)}" placeholder="https://maps.app.goo.gl/..." inputmode="url" autocapitalize="off">
+        <p class="hint">Al escanear, el cliente va directo a este link sin ver ninguna página. El nombre solo te sirve a ti para identificarlo.</p>
+      </div>
+
+      <div id="hub-box" style="display:${mode === 'hub' ? 'block' : 'none'}">
+        <label>Descripción corta</label>
+        <textarea id="bio" placeholder="Ej: Café de especialidad frente al mar">${esc(d.bio)}</textarea>
+
+        <label>Imagen / logo</label>
+        <div class="row" style="gap:14px;">
+          ${img ? `<img class="preview-img" src="${esc(img)}" alt="" onerror="this.style.visibility='hidden'">` : `<div class="preview-img"></div>`}
+          <div style="flex:1;min-width:180px;">
+            <div class="row">
+              <label class="btn" style="margin:0;text-transform:none;letter-spacing:0;font-size:14px;color:#f8fafc;">
+                📷 Subir imagen<input type="file" id="file" accept="image/*" hidden>
+              </label>
+              ${d.image ? `<button class="ghost" id="rmimg">Quitar</button>` : ''}
+            </div>
+            <p class="hint">Se recorta cuadrada y se achica sola. También puedes pegar un link de imagen:</p>
+            <input type="url" id="image" value="${esc(d.image)}" placeholder="https://... o img/archivo.jpg" style="margin-top:6px;font-size:13px;padding:9px;">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="links-wrap" style="display:${mode === 'hub' ? 'block' : 'none'}">
+      <h2>Botones</h2>
+      <div class="list" id="links">${d.links.map((l, i) => linkRow(l, i, d.links.length)).join('') || '<p class="muted">Aún no hay botones. Agrega uno abajo.</p>'}</div>
+      <div class="presets">
+        ${PRESETS.map((p, i) => `<button class="ghost" data-p="${i}">+ ${p.label}</button>`).join('')}
+        <button class="ghost" data-p="-1">+ Otro</button>
+      </div>
+    </div>
+
+    <div class="savebar"><div class="wrap">
+      <button class="danger" id="reset" ${isNew ? 'style="visibility:hidden"' : ''}>Vaciar perfil</button>
+      <button class="primary" id="save">💾 Guardar cambios</button>
+    </div></div>`;
+
+  // --- eventos ---
+  const $ = id => document.getElementById(id);
+  $('back').onclick = () => renderList();
+  $('copy').onclick = () => navigator.clipboard.writeText(publicUrl(draftId)).then(() => toast('Link copiado'));
+  $('m-hub').onclick = () => { syncFields(); mode = 'hub'; drawEdit(isNew); };
+  $('m-red').onclick = () => { syncFields(); mode = 'redirect'; drawEdit(isNew); };
+  $('name').oninput = e => d.name = e.target.value;
+  if ($('direct')) $('direct').oninput = e => d.direct_url = e.target.value;
+  if ($('bio')) $('bio').oninput = e => d.bio = e.target.value;
+  if ($('image')) $('image').onchange = e => { d.image = e.target.value.trim(); previewSrc = ''; drawEdit(isNew); };
+  if ($('rmimg')) $('rmimg').onclick = () => { d.image = ''; previewSrc = ''; drawEdit(isNew); };
+  if ($('file')) $('file').onchange = async e => {
+    const file = e.target.files[0]; if (!file) return;
+    toast('Subiendo imagen...', 'ok', 10000);
+    try {
+      const { path, dataUrl } = await uploadImage(file, draftId);
+      d.image = path; previewSrc = dataUrl; drawEdit(isNew);
+      toast('Imagen subida. Recuerda Guardar cambios.');
+    } catch (err) { toast('Error al subir: ' + err.message, 'err', 5000); }
+  };
+
+  app.querySelectorAll('[data-p]').forEach(b => b.onclick = () => {
+    syncFields();
+    const p = PRESETS[+b.dataset.p] || { text: '', url: '' };
+    d.links.push({ text: p.text, url: p.url });
+    drawEdit(isNew);
+    const inputs = app.querySelectorAll('.link-row [data-f="url"]');
+    const last = inputs[inputs.length - 1]; if (last) { last.focus(); last.setSelectionRange(last.value.length, last.value.length); }
+  });
+  app.querySelectorAll('.link-row input').forEach(inp => inp.oninput = () => {
+    d.links[+inp.dataset.i][inp.dataset.f] = inp.value;
+  });
+  app.querySelectorAll('[data-act]').forEach(b => b.onclick = () => {
+    syncFields();
+    const i = +b.dataset.i, L = d.links;
+    if (b.dataset.act === 'up' && i > 0) [L[i - 1], L[i]] = [L[i], L[i - 1]];
+    if (b.dataset.act === 'down' && i < L.length - 1) [L[i + 1], L[i]] = [L[i], L[i + 1]];
+    if (b.dataset.act === 'del') L.splice(i, 1);
+    drawEdit(isNew);
+  });
+
+  $('reset').onclick = async () => {
+    if (!confirm(`¿Vaciar el perfil ${draftId}? Quedará como "sin configurar" (el QR sigue funcionando).`)) return;
+    await doSave({ name: `Nombre Negocio ${draftId}`, bio: '', image: '', direct_url: '', links: [] });
+  };
+  $('save').onclick = () => {
+    syncFields();
+    const name = (d.name || '').trim();
+    if (!name) return toast('Ponle un nombre al negocio', 'err');
+    let out;
+    if (mode === 'redirect') {
+      const url = normalizeUrl(d.direct_url);
+      if (!url) return toast('Falta el link de destino', 'err');
+      // Se conservan bio/imagen/botones por si después vuelves a "Página con botones"
+      out = { name, bio: d.bio || '', image: d.image || '', direct_url: url, links: cleanLinks(d.links) };
+    } else {
+      const links = cleanLinks(d.links);
+      if (links === null) return toast('Hay un botón con texto pero sin link', 'err');
+      out = { name, bio: (d.bio || '').trim(), image: (d.image || '').trim(), direct_url: '', links };
+    }
+    doSave(out);
+  };
+}
+
+function linkRow(l, i, n) {
+  return `<div class="link-row">
+    <input type="text" data-i="${i}" data-f="text" value="${esc(l.text)}" placeholder="Texto del botón">
+    <input type="url" data-i="${i}" data-f="url" value="${esc(l.url)}" placeholder="https://..." inputmode="url" autocapitalize="off">
+    <div class="ctrl">
+      <button class="ghost" data-act="up" data-i="${i}" ${i === 0 ? 'disabled' : ''}>↑</button>
+      <button class="ghost" data-act="down" data-i="${i}" ${i === n - 1 ? 'disabled' : ''}>↓</button>
+      <button class="danger" data-act="del" data-i="${i}">Eliminar</button>
+    </div>
+  </div>`;
+}
+
+function syncFields() {
+  const g = id => document.getElementById(id);
+  if (g('name')) draft.name = g('name').value;
+  if (g('direct')) draft.direct_url = g('direct').value;
+  if (g('bio')) draft.bio = g('bio').value;
+  app.querySelectorAll('.link-row input').forEach(inp => draft.links[+inp.dataset.i][inp.dataset.f] = inp.value);
+}
+
+function cleanLinks(links) {
+  const out = [];
+  for (const l of links || []) {
+    const text = (l.text || '').trim(), url = normalizeUrl(l.url);
+    if (!text && !url) continue;
+    if (!url || /^https:\/\/$/.test(url)) return null;
+    out.push({ text: text || url, url });
+  }
+  return out;
+}
+
+async function doSave(obj) {
+  const btn = document.getElementById('save'); if (btn) { btn.disabled = true; btn.textContent = 'Guardando...'; }
+  try {
+    await saveProfile(draftId, obj);
+    toast('✔ Guardado. Se ve en vivo en ~1 minuto.', 'ok', 4000);
+    renderList();
+  } catch (e) {
+    toast('Error al guardar: ' + e.message, 'err', 6000);
+    if (btn) { btn.disabled = false; btn.textContent = '💾 Guardar cambios'; }
+  }
+}
+
+/* ============ INICIO ============ */
+(async function init() {
+  if (!cfg || !cfg.token) return renderSetup();
+  app.innerHTML = '<p class="muted">Cargando perfiles...</p>';
+  try { data = (await fetchClients()).json; renderList(); }
+  catch (e) { renderSetup('Sesión inválida o token vencido: ' + e.message); }
+})();
+</script>
+</body>
+</html>
