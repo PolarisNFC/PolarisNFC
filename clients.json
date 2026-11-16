@@ -24,19 +24,10 @@
   },
   "003": {
     "name": "Rothko Café",
-    "bio": "Entrena siempre en el mejor ambiente",
-    "image": "img/003-1794773414116.jpg",
-    "direct_url": "https://search.google.com/local/writereview?placeid=ChIJ8StbHB_hiZYRowzArMxyD80",
-    "links": [
-      {
-        "text": "📸 Síguenos en Instagram",
-        "url": "https://instagram.com/gimnasioseven"
-      },
-      {
-        "text": "📍 Cómo llegar",
-        "url": "https://maps.app.goo.gl/x7Wv4mJLcStyMnbs5"
-      }
-    ]
+    "bio": "",
+    "image": "",
+    "direct_url": "",
+    "links": []
   },
   "004": {
     "name": "SEVEN",
