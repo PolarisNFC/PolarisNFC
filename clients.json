@@ -30,9 +30,9 @@
     "links": []
   },
   "004": {
-    "name": "Seven",
-    "bio": "El mejor lugar para entrenar",
-    "image": "img/004-1794848402783.jpg",
+    "name": "Mindfit Valparaíso",
+    "bio": "Mejora tu cuerpo, cambia tu mente.",
+    "image": "img/004-1794855703991.jpg",
     "direct_url": "",
     "links": [
       {
@@ -42,6 +42,14 @@
       {
         "text": "📸 Síguenos en Instagram",
         "url": "https://www.instagram.com/gimnasioseven"
+      },
+      {
+        "text": "💬 Escríbenos al WhatsApp",
+        "url": "https://api.whatsapp.com/send/?phone=56928236829&text&type=phone_number&app_absent=0"
+      },
+      {
+        "text": "Contactanos",
+        "url": "https://taplink.cc/mindfit_chile"
       }
     ]
   },
