@@ -1,7 +1,7 @@
 {
   "001": {
-    "name": "Nombre Negocio 001",
-    "bio": "Bienvenido a nuestro perfil",
+    "name": "SEVEN",
+    "bio": "El mejor lugar para entrenar en la V región",
     "image": "https://via.placeholder.com/150",
     "direct_url": "",
     "links": [
@@ -10,8 +10,8 @@
         "url": "https://maps.google.com"
       },
       {
-        "text": "💬 Escríbenos al WhatsApp",
-        "url": "https://wa.me/"
+        "text": "📸 Síguenos en Instagram",
+        "url": "https://www.instagram.com/gimnasioseven"
       }
     ]
   },
