@@ -30,11 +30,20 @@
     "links": []
   },
   "004": {
-    "name": "Nombre Negocio 004",
-    "bio": "",
-    "image": "",
+    "name": "Seven",
+    "bio": "El mejor lugar para entrenar",
+    "image": "img/004-1794848402783.jpg",
     "direct_url": "",
-    "links": []
+    "links": [
+      {
+        "text": "⭐ Califícanos en Google",
+        "url": "https://g.page/r/"
+      },
+      {
+        "text": "📸 Síguenos en Instagram",
+        "url": "https://www.instagram.com/gimnasioseven"
+      }
+    ]
   },
   "005": {
     "name": "Nombre Negocio 005",
