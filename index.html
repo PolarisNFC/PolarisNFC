@@ -25,6 +25,7 @@
             border: 3px solid #38bdf8; 
             box-shadow: 0 10px 25px -5px rgba(56, 189, 248, 0.3); 
         }
+        .profile-img.ph { display: inline-flex; align-items: center; justify-content: center; background: #1e293b; color: #38bdf8; font-size: 40px; font-weight: 700; }
         h1 { font-size: 24px; font-weight: 700; color: #ffffff; margin-bottom: 8px; }
         p.bio { font-size: 14px; color: #94a3b8; margin-bottom: 28px; line-height: 1.5; }
         .links-container { display: flex; flex-direction: column; gap: 14px; }
@@ -53,6 +54,16 @@
     </div>
 
     <script>
+        const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+        // Si no hay imagen (o no carga), muestra un círculo con la inicial del negocio
+        function fallbackImg(el) {
+            const d = document.createElement('div');
+            d.className = 'profile-img ph';
+            d.textContent = el.dataset.initial || '?';
+            el.replaceWith(d);
+        }
+
         async function loadProfile() {
             const urlParams = new URLSearchParams(window.location.search);
             const id = urlParams.get('id');
@@ -96,15 +107,17 @@
                 document.title = client.name;
 
                 let html = `
-                    <img src="${client.image || 'https://via.placeholder.com/150'}" class="profile-img" alt="${client.name}">
-                    <h1>${client.name}</h1>
-                    <p class="bio">${client.bio}</p>
+                    ${client.image && client.image.trim()
+                        ? `<img src="${esc(client.image)}" class="profile-img" alt="" data-initial="${esc((client.name || '?').trim().charAt(0).toUpperCase())}" onerror="fallbackImg(this)">`
+                        : `<div class="profile-img ph">${esc((client.name || '?').trim().charAt(0).toUpperCase())}</div>`}
+                    <h1>${esc(client.name)}</h1>
+                    <p class="bio">${esc(client.bio)}</p>
                     <div class="links-container">
                 `;
 
                 if (client.links && client.links.length > 0) {
                     client.links.forEach(link => {
-                        html += `<a href="${link.url}" class="btn" target="_blank" rel="noopener">${link.text}</a>`;
+                        html += `<a href="${esc(link.url)}" class="btn" target="_blank" rel="noopener">${esc(link.text)}</a>`;
                     });
                 }
 
