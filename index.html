@@ -64,6 +64,34 @@
             el.replaceWith(d);
         }
 
+        const SUPABASE_URL = 'https://plwmvqdztejlfjbjzfjv.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_QUBbXk2KJkCnr-ddVVGJRQ_2sdwK4VQ'; // clave pública, es seguro que esté aquí
+
+        // Fuente principal: base de datos. Si un perfil es "igual a" otro, usa el contenido del otro.
+        async function fromDb(id) {
+            const get = async pid => {
+                const r = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(pid)}&select=id,name,bio,image,direct_url,links,menu,same_as`,
+                    { headers: { apikey: SUPABASE_KEY }, signal: AbortSignal.timeout(4000) });
+                if (!r.ok) throw new Error('db ' + r.status);
+                return (await r.json())[0] || null;
+            };
+            let p = await get(id);
+            if (p && p.same_as) p = (await get(p.same_as)) || p;
+            return p;
+        }
+
+        // Respaldo: copia estática en el repo (por si la base de datos no responde)
+        async function fromSnapshot(id) {
+            const data = await (await fetch('clients.json?v=' + Date.now())).json();
+            let p = data[id];
+            if (p && p.same_as) p = data[p.same_as] || p;
+            return p || null;
+        }
+
+        async function getClient(id) {
+            try { return await fromDb(id); } catch (e) { return await fromSnapshot(id); }
+        }
+
         async function loadProfile() {
             const urlParams = new URLSearchParams(window.location.search);
             const id = urlParams.get('id');
@@ -86,10 +114,7 @@
 
             // SI HAY ID: Busca los datos en el JSON
             try {
-                const response = await fetch('clients.json?v=' + new Date().getTime());
-                const data = await response.json();
-                
-                const client = data[id];
+                const client = await getClient(id);
                 const app = document.getElementById('app');
 
                 if (!client) {
