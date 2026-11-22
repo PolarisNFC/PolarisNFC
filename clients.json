@@ -6,12 +6,12 @@
     "direct_url": "",
     "links": [
       {
-        "text": "⭐ Califícanos en Google Maps",
-        "url": "https://maps.google.com"
+        "url": "https://maps.google.com",
+        "text": "⭐ Califícanos en Google Maps"
       },
       {
-        "text": "📸 Síguenos en Instagram",
-        "url": "https://www.instagram.com/gimnasioseven"
+        "url": "https://www.instagram.com/gimnasioseven",
+        "text": "📸 Síguenos en Instagram"
       }
     ]
   },
@@ -36,36 +36,42 @@
     "direct_url": "",
     "links": [
       {
-        "text": "⭐ Califícanos en Google",
-        "url": "https://search.google.com/local/writereview?placeid=ChIJoQDgeADhiZYRytKP_QUu2F4"
+        "url": "https://search.google.com/local/writereview?placeid=ChIJoQDgeADhiZYRytKP_QUu2F4",
+        "text": "⭐ Califícanos en Google"
       },
       {
-        "text": "📸 Síguenos en Instagram",
-        "url": "https://www.instagram.com/gimnasioseven"
+        "url": "https://www.instagram.com/gimnasioseven",
+        "text": "📸 Síguenos en Instagram"
       },
       {
-        "text": "💬 Escríbenos al WhatsApp",
-        "url": "https://api.whatsapp.com/send/?phone=56928236829&text&type=phone_number&app_absent=0"
+        "url": "https://api.whatsapp.com/send/?phone=56928236829&text&type=phone_number&app_absent=0",
+        "text": "💬 Escríbenos al WhatsApp"
       },
       {
-        "text": "Contactanos",
-        "url": "https://taplink.cc/mindfit_chile"
+        "url": "https://taplink.cc/mindfit_chile",
+        "text": "Contactanos"
       }
     ]
   },
   "005": {
-    "name": "Nombre Negocio 005",
-    "bio": "Descripción corta",
+    "name": "Jugos Tropicales Fénix",
+    "bio": "Restaurante en terminal de buses de Valparaíso ",
     "image": "",
     "direct_url": "",
-    "links": []
+    "links": [
+      {
+        "url": "https://search.google.com/local/writereview?placeid=ChIJv8OuNQDhiZYRvOYRkg9IAxY",
+        "text": "Déjanos una reseña en Google"
+      }
+    ]
   },
   "006": {
     "name": "Nombre Negocio 006",
     "bio": "Descripción corta",
     "image": "",
     "direct_url": "",
-    "links": []
+    "links": [],
+    "same_as": "005"
   },
   "007": {
     "name": "Nombre Negocio 007",
@@ -93,8 +99,7 @@
     "bio": "Descripción corta",
     "image": "",
     "direct_url": "",
-    "links": [],
-    "sold": true
+    "links": []
   },
   "011": {
     "name": "Nombre Negocio 011",
