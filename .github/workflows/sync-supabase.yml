@@ -1,0 +1,45 @@
+name: Sync desde Supabase
+
+# Hace dos cosas:
+# 1) Consulta Supabase cada 3 días para que el proyecto gratuito no se pause por inactividad.
+# 2) Guarda una copia de respaldo de los perfiles en clients.json (la usa la página si Supabase falla).
+on:
+  schedule:
+    - cron: "17 12 */3 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_URL: https://plwmvqdztejlfjbjzfjv.supabase.co
+      SUPABASE_KEY: sb_publishable_QUBbXk2KJkCnr-ddVVGJRQ_2sdwK4VQ   # clave pública
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Descargar perfiles
+        run: |
+          curl -sf -H "apikey: $SUPABASE_KEY" \
+            "$SUPABASE_URL/rest/v1/profiles?select=id,name,bio,image,direct_url,links,menu,same_as&order=id" \
+            -o raw.json
+          COUNT=$(jq length raw.json)
+          echo "Perfiles recibidos: $COUNT"
+          [ "$COUNT" -ge 1 ] || { echo "Respuesta vacía: no se toca clients.json"; exit 1; }
+          jq 'map({key: .id, value: (del(.id) | with_entries(select(.value != null)))}) | from_entries' raw.json > clients.json
+          echo "{\"last_sync\":\"$(date -u +%F)\",\"profiles\":$COUNT}" > sync-status.json
+          rm raw.json
+
+      - name: Guardar cambios si los hay
+        run: |
+          git config user.name "polaris-sync"
+          git config user.email "polaris-sync@users.noreply.github.com"
+          git add clients.json sync-status.json
+          if git diff --cached --quiet; then
+            echo "Sin cambios"
+          else
+            git commit -m "Sync desde Supabase"
+            git push
+          fi
