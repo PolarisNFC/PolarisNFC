@@ -25,6 +25,7 @@
   .id { font-weight: 800; color: #38bdf8; min-width: 38px; }
   .lrow { display: flex; flex-direction: column; gap: 6px; padding: 10px 0; border-bottom: 1px solid #334155; }
   .lrow.o { flex-direction: row; align-items: center; }
+  .cat { border-top: 1px solid #334155; padding-top: 12px; margin-top: 12px; }
   .bar { position: fixed; left: 0; right: 0; bottom: 0; background: #0f172acc; backdrop-filter: blur(8px); padding: 12px 16px; border-top: 1px solid #334155; }
   .bar button { width: 100%; max-width: 560px; display: block; margin: 0 auto; padding: 14px; }
   #toast { position: fixed; top: 14px; left: 50%; transform: translateX(-50%); background: #16a34a; color: #fff; padding: 10px 16px; border-radius: 10px; font-size: 14px; display: none; z-index: 9; max-width: 90%; }
@@ -124,6 +125,53 @@ function renderLocked(p) {
   });
 }
 
+/* ---- carta ---- */
+function parseMenu(text) {
+  const cats = []; let cur = null;
+  for (let line of String(text).split('\n')) {
+    line = line.trim(); if (!line) continue;
+    if (line.startsWith('#')) { cur = { name: line.replace(/^#+\s*/, ''), items: [] }; cats.push(cur); continue; }
+    if (!cur) { cur = { name: 'Carta', items: [] }; cats.push(cur); }
+    const p = line.split('|').map(x => x.trim());
+    cur.items.push(p.length >= 3 ? { name: p[0], desc: p[1], price: p[2] } : { name: p[0], desc: '', price: p[1] || '' });
+  }
+  return cats.filter(c => c.items.length);
+}
+const cleanMenu = m => {
+  const cats = ((m && m.categories) || []).map(c => ({ name: (c.name || '').trim(), items: (c.items || []).filter(i => (i.name || '').trim())
+    .map(i => ({ name: i.name.trim(), desc: (i.desc || '').trim(), price: (i.price || '').trim(), ...(i.soldout ? { soldout: true } : {}) })) })).filter(c => c.items.length);
+  return cats.length ? { categories: cats } : null;
+};
+function menuCard(d) {
+  const m = d.menu && d.menu.categories ? d.menu : { categories: [] };
+  return `<div class="card"><b>Carta / menú</b><p class="muted">Aparece como botón "📋 Ver menú" en el perfil.</p>
+  ${m.categories.map((c, ci) => `<div class="cat"><div class="row"><input data-m="${ci}::name" value="${esc(c.name)}" placeholder="Categoría (ej. Entradas)"><button class="ghost" data-cup="${ci}">↑</button><button class="ghost" data-cdn="${ci}">↓</button><button class="ghost" data-crm="${ci}">✕</button></div>
+    ${(c.items || []).map((it, ii) => `<div class="lrow"><div class="row"><input data-m="${ci}:${ii}:name" value="${esc(it.name)}" placeholder="Plato"><input data-m="${ci}:${ii}:price" value="${esc(it.price)}" placeholder="Precio" style="max-width:110px"></div><input data-m="${ci}:${ii}:desc" value="${esc(it.desc)}" placeholder="Descripción (opcional)"><div class="row"><label class="chk" style="font-size:13px"><input type="checkbox" data-mso="${ci}:${ii}" ${it.soldout ? 'checked' : ''}> Agotado</label><span class="grow"></span><button class="ghost" data-irm="${ci}:${ii}">✕</button></div></div>`).join('')}
+    <button class="ghost" data-iadd="${ci}" style="margin-top:8px">+ Plato</button></div>`).join('')}
+  <button class="ghost" id="cadd" style="margin-top:12px">+ Categoría</button>
+  <label>Importar desde texto</label><textarea id="mimp" placeholder="# Entradas&#10;Empanada de pino | Con aceitunas | 2500&#10;# Bebidas&#10;Jugo natural | 2000"></textarea>
+  <button class="ghost" id="mimpgo" style="margin-top:8px">Importar (reemplaza la carta)</button></div>`;
+}
+function menuHandlers(d) {
+  const M = () => (d.menu = d.menu && d.menu.categories ? d.menu : { categories: [] });
+  const q = (sel, fn) => document.querySelectorAll(sel).forEach(fn);
+  q('[data-m]', i => i.oninput = () => { const [c, it, k] = i.dataset.m.split(':'); (it === '' ? M().categories[c] : M().categories[c].items[it])[k] = i.value; });
+  q('[data-mso]', i => i.onchange = () => { const [c, it] = i.dataset.mso.split(':'); M().categories[c].items[it].soldout = i.checked; });
+  const mvc = (i, j) => { const a = M().categories; if (j < 0 || j >= a.length) return; [a[i], a[j]] = [a[j], a[i]]; renderEdit(); };
+  q('[data-cup]', b => b.onclick = () => mvc(+b.dataset.cup, +b.dataset.cup - 1));
+  q('[data-cdn]', b => b.onclick = () => mvc(+b.dataset.cdn, +b.dataset.cdn + 1));
+  q('[data-crm]', b => b.onclick = () => { M().categories.splice(+b.dataset.crm, 1); renderEdit(); });
+  q('[data-iadd]', b => b.onclick = () => { const c = M().categories[+b.dataset.iadd]; c.items = c.items || []; c.items.push({ name: '', desc: '', price: '' }); renderEdit(); });
+  q('[data-irm]', b => b.onclick = () => { const [c, i] = b.dataset.irm.split(':'); M().categories[c].items.splice(+i, 1); renderEdit(); });
+  on('cadd', () => { M().categories.push({ name: '', items: [{ name: '', desc: '', price: '' }] }); renderEdit(); });
+  on('mimpgo', () => {
+    const cats = parseMenu($('mimp').value);
+    if (!cats.length) return toast('No encontré platos. Usa "# Categoría" y "Plato | Descripción | Precio".', true);
+    if (M().categories.length && !confirm('Esto reemplaza la carta actual. ¿Continuar?')) return;
+    d.menu = { categories: cats }; renderEdit(); toast('Carta importada. Revisa y guarda.');
+  });
+}
+
 /* ---- editor ---- */
 function renderEdit() {
   const d = draft, alias = isAdmin && d.same_as, own = owners.filter(o => o.profile_id === d.id);
@@ -137,7 +185,7 @@ function renderEdit() {
   ${isAdmin ? `<div class="card"><label style="margin-top:0">Redirección directa (opcional)</label><input data-k="direct_url" value="${esc(d.direct_url)}" placeholder="Si lo llenas, ignora los botones">
     <p class="muted" style="margin-top:6px">Úsalo para ir directo a la reseña de Google, sin pantalla intermedia.</p></div>` : ''}
   <div class="card"><b>Botones</b>${d.links.map((l, i) => `<div class="lrow"><input data-l="${i}:text" value="${esc(l.text)}" placeholder="Texto del botón"><input data-l="${i}:url" value="${esc(l.url)}" placeholder="Link"><div class="row"><button class="ghost" data-up="${i}">↑</button><button class="ghost" data-dn="${i}">↓</button><button class="ghost" data-rm="${i}">✕</button></div></div>`).join('')}
-    <button class="ghost" id="add" style="margin-top:12px">+ Agregar botón</button></div>`}
+    <button class="ghost" id="add" style="margin-top:12px">+ Agregar botón</button></div>${menuCard(d)}`}
   ${isAdmin ? `<div class="card"><label class="chk"><input type="checkbox" id="sold" ${d.sold ? 'checked' : ''}> 🔒 Marcar como vendido</label>
     ${d.sold ? `<label>Clave de protección (opcional)</label><input data-k="_pass" type="password" autocomplete="new-password" placeholder="${locks[d.id] ? 'Vacío = mantener la actual' : 'Una clave que recuerdes'}">${locks[d.id] ? '<button class="ghost" id="rmlock" style="margin-top:8px">Quitar clave</button>' : ''}` : ''}</div>
   <div class="card"><b>Clientes con acceso a este perfil</b>
@@ -157,6 +205,7 @@ function renderEdit() {
     r.error ? toast(r.error.message, true) : (await loadOwners(), renderEdit());
   });
   on('back', renderList);
+  menuHandlers(d);
   on('copy', () => navigator.clipboard.writeText(pubUrl(d.id)).then(() => toast('Link copiado')));
   on('add', () => { d.links.push({ text: '', url: '' }); renderEdit(); });
   on('rmlock', async () => { await sb.from('profile_locks').delete().eq('profile_id', d.id); delete locks[d.id]; toast('Clave quitada'); renderEdit(); });
@@ -169,7 +218,7 @@ function renderEdit() {
   on('save', save);
 }
 async function save() {
-  const d = draft, f = { name: d.name, bio: d.bio, image: (d.image || '').trim(), links: d.links.filter(l => l.text && l.url).map(l => ({ text: l.text.trim(), url: norm(l.url) })) };
+  const d = draft, f = { name: d.name, bio: d.bio, image: (d.image || '').trim(), links: d.links.filter(l => l.text && l.url).map(l => ({ text: l.text.trim(), url: norm(l.url) })), menu: cleanMenu(d.menu) };
   if (isAdmin) { f.direct_url = norm(d.direct_url); f.same_as = d.same_as || null; f.sold = !!d.sold; }
   $('save').disabled = true;
   const r = await sb.from('profiles').update(f).eq('id', d.id).select('id');

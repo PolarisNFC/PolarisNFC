@@ -146,6 +146,9 @@
                     });
                 }
 
+                if (client.menu && (client.menu.categories || []).some(c => (c.items || []).length)) {
+                    html += `<a href="menu.html?id=${encodeURIComponent(id)}" class="btn">📋 Ver menú</a>`;
+                }
                 html += `</div><div class="footer">POLARIS NFC</div>`;
                 app.innerHTML = html;
 

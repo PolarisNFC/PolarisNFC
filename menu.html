@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Carta</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #f8fafc; padding: 24px 16px 60px; }
+  .wrap { max-width: 520px; margin: 0 auto; }
+  h1 { font-size: 26px; text-align: center; } .sub { text-align: center; color: #94a3b8; font-size: 13px; margin: 4px 0 18px; }
+  .chips { display: flex; gap: 8px; overflow-x: auto; position: sticky; top: 0; background: #0f172a; padding: 10px 0; margin-bottom: 8px; }
+  .chips a { white-space: nowrap; background: #1e293b; border: 1px solid #334155; color: #f8fafc; text-decoration: none; padding: 8px 14px; border-radius: 999px; font-size: 13px; font-weight: 600; }
+  h2 { font-size: 18px; color: #38bdf8; margin: 22px 0 10px; scroll-margin-top: 60px; }
+  .item { display: flex; gap: 12px; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #1e293b; }
+  .name { font-weight: 600; } .desc { color: #94a3b8; font-size: 13px; margin-top: 3px; line-height: 1.4; }
+  .price { font-weight: 700; white-space: nowrap; }
+  .out { opacity: .45; } .out .price { text-decoration: line-through; }
+  .tag { font-size: 11px; color: #f87171; margin-left: 6px; }
+  .msg { text-align: center; color: #94a3b8; margin-top: 40px; }
+  .footer { font-size: 11px; color: #64748b; margin-top: 40px; text-align: center; letter-spacing: .5px; text-transform: uppercase; }
+</style>
+</head>
+<body>
+<div class="wrap" id="app"><p class="msg">Cargando...</p></div>
+<script>
+const SUPABASE_URL = 'https://plwmvqdztejlfjbjzfjv.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_QUBbXk2KJkCnr-ddVVGJRQ_2sdwK4VQ';
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmt = p => /^[\d.,]+$/.test(p) ? '$' + p : p;
+
+async function fromDb(id) {
+  const get = async pid => {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(pid)}&select=id,name,menu,same_as`, { headers: { apikey: SUPABASE_KEY }, signal: AbortSignal.timeout(4000) });
+    if (!r.ok) throw new Error('db ' + r.status);
+    return (await r.json())[0] || null;
+  };
+  let p = await get(id);
+  if (p && p.same_as) p = (await get(p.same_as)) || p;
+  return p;
+}
+async function fromSnapshot(id) {
+  const data = await (await fetch('clients.json?v=' + Date.now())).json();
+  let p = data[id];
+  if (p && p.same_as) p = data[p.same_as] || p;
+  return p || null;
+}
+
+(async () => {
+  const app = document.getElementById('app');
+  const id = new URLSearchParams(location.search).get('id');
+  if (!id) { app.innerHTML = '<p class="msg">Carta no disponible.</p>'; return; }
+  let p;
+  try { p = await fromDb(id); } catch (e) { try { p = await fromSnapshot(id); } catch (e2) {} }
+  const cats = ((p && p.menu && p.menu.categories) || []).filter(c => (c.items || []).length);
+  if (!cats.length) { app.innerHTML = '<p class="msg">Esta carta aún no está disponible.</p>'; return; }
+  document.title = 'Carta · ' + p.name;
+  app.innerHTML = `<h1>${esc(p.name)}</h1><p class="sub">Carta</p>
+    ${cats.length > 1 ? `<div class="chips">${cats.map((c, i) => `<a href="#c${i}">${esc(c.name)}</a>`).join('')}</div>` : ''}
+    ${cats.map((c, i) => `<h2 id="c${i}">${esc(c.name)}</h2>${c.items.map(it => `
+      <div class="item ${it.soldout ? 'out' : ''}"><div><div class="name">${esc(it.name)}${it.soldout ? '<span class="tag">Agotado</span>' : ''}</div>${it.desc ? `<div class="desc">${esc(it.desc)}</div>` : ''}</div><div class="price">${esc(fmt(it.price || ''))}</div></div>`).join('')}`).join('')}
+    <div class="footer">POLARIS NFC</div>`;
+})();
+</script>
+</body>
+</html>
