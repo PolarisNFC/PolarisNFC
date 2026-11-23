@@ -92,6 +92,10 @@
             try { return await fromDb(id); } catch (e) { return await fromSnapshot(id); }
         }
 
+        // Solo se permiten enlaces https:// (y rutas locales img/...). Todo lo demás se descarta.
+        const safeHttps = u => { try { const x = new URL(String(u || '').trim()); return x.protocol === 'https:' && x.hostname.includes('.') && !x.username && !x.password ? x.href : ''; } catch (e) { return ''; } };
+        const safeImg = u => { u = String(u || '').trim(); return /^img\/[A-Za-z0-9_.\/-]+$/.test(u) && !u.includes('..') ? u : safeHttps(u); };
+
         async function loadProfile() {
             const urlParams = new URLSearchParams(window.location.search);
             const id = urlParams.get('id');
@@ -124,7 +128,9 @@
 
                 // SI TIENE URL DIRECTA (ej. Google Maps directo): Redirige de inmediato
                 if (client.direct_url && client.direct_url.trim() !== "") {
-                    window.location.href = client.direct_url;
+                    const dest = safeHttps(client.direct_url);
+                    if (!dest) { app.innerHTML = `<div class="card"><h1>Enlace no válido</h1><p class="bio" style="margin-top:8px; margin-bottom:0;">Este stand tiene un enlace que no es seguro.</p></div>`; return; }
+                    window.location.replace(dest);
                     return;
                 }
 
@@ -132,8 +138,8 @@
                 document.title = client.name;
 
                 let html = `
-                    ${client.image && client.image.trim()
-                        ? `<img src="${esc(client.image)}" class="profile-img" alt="" data-initial="${esc((client.name || '?').trim().charAt(0).toUpperCase())}" onerror="fallbackImg(this)">`
+                    ${safeImg(client.image)
+                        ? `<img src="${esc(safeImg(client.image))}" class="profile-img" alt="" data-initial="${esc((client.name || '?').trim().charAt(0).toUpperCase())}" onerror="fallbackImg(this)">`
                         : `<div class="profile-img ph">${esc((client.name || '?').trim().charAt(0).toUpperCase())}</div>`}
                     <h1>${esc(client.name)}</h1>
                     <p class="bio">${esc(client.bio)}</p>
@@ -142,7 +148,8 @@
 
                 if (client.links && client.links.length > 0) {
                     client.links.forEach(link => {
-                        html += `<a href="${esc(link.url)}" class="btn" target="_blank" rel="noopener">${esc(link.text)}</a>`;
+                        const u = safeHttps(link.url);
+                        if (u && link.text) html += `<a href="${esc(u)}" class="btn" target="_blank" rel="noopener noreferrer">${esc(link.text)}</a>`;
                     });
                 }
 

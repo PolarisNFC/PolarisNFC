@@ -42,8 +42,16 @@ let me, isAdmin = false, profiles = [], owners = [], locks = {}, draft = null, u
 const $ = id => document.getElementById(id);
 const on = (id, fn) => { const e = $(id); if (e) e.onclick = fn; };
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const norm = u => { u = (u || '').trim(); return !u || /^(https?:|mailto:|tel:)/i.test(u) ? u : 'https://' + u; };
-const pubUrl = id => location.href.split('#')[0].split('?')[0].replace(/[^/]*$/, '') + 'index.html?id=' + id;
+/* ---- links seguros: solo https:// ---- */
+const safeHttps = u => { try { const x = new URL(String(u || '').trim()); return x.protocol === 'https:' && x.hostname.includes('.') && !x.username && !x.password ? x.href : ''; } catch (e) { return ''; } };
+const safeImg = u => { u = String(u || '').trim(); return /^img\/[A-Za-z0-9_.\/-]+$/.test(u) && !u.includes('..') ? u : safeHttps(u); };
+function normUrl(u) {                       // '' = vacío · null = inválido · si no, https:// normalizado
+  u = (u || '').trim(); if (!u) return '';
+  u = u.replace(/^http:\/\//i, 'https://');
+  if (/^[a-z][a-z0-9+.-]*:/i.test(u) && !/^https:\/\//i.test(u)) return null;   // javascript:, data:, mailto:, tel:...
+  return safeHttps(/^https:\/\//i.test(u) ? u : 'https://' + u) || null;
+}
+const pubUrl = id => location.href.split('#')[0].split('?')[0].replace(/[^/]*$/, '') + 'index.html?id=' + encodeURIComponent(id);
 function toast(m, err) { const t = $('toast'); t.textContent = m; t.className = (err ? 'err ' : '') + 'show'; clearTimeout(toast.t); toast.t = setTimeout(() => t.className = '', 3800); }
 
 /* ---- clave de stands vendidos (PBKDF2) ---- */
@@ -96,12 +104,12 @@ async function load() {
 }
 
 /* ---- lista ---- */
-const badge = p => p.sold ? '🔒 Vendido' + (locks[p.id] ? ' · con clave' : '') : p.same_as ? '↔ Igual al ' + p.same_as : p.direct_url ? '↗ Redirección directa' : 'Con botones';
+const badge = p => p.sold ? '🔒 Vendido' + (locks[p.id] ? ' · con clave' : '') : p.same_as ? '↔ Igual al ' + esc(p.same_as) : p.direct_url ? '↗ Redirección directa' : 'Con botones';
 function renderList() {
   draft = null; unlocked = null;
   $('app').innerHTML = `<div class="top"><b class="grow">Polaris NFC</b><span class="muted">${esc(me.email)}${isAdmin ? ' · admin' : ''}</span><button class="ghost" id="out">Salir</button></div>
     ${profiles.length ? '' : '<div class="card">Tu cuenta aún no tiene perfiles asignados. Pídele al administrador que te dé acceso con este correo.</div>'}
-    ${profiles.map(p => `<div class="item" data-id="${p.id}"><span class="id">${p.id}</span><div class="grow"><b>${esc(p.name)}</b><div class="muted">${badge(p)}</div></div>›</div>`).join('')}`;
+    ${profiles.map(p => `<div class="item" data-id="${esc(p.id)}"><span class="id">${esc(p.id)}</span><div class="grow"><b>${esc(p.name)}</b><div class="muted">${badge(p)}</div></div>›</div>`).join('')}`;
   on('out', async () => { await sb.auth.signOut(); renderLogin(); });
   document.querySelectorAll('.item').forEach(e => e.onclick = () => openProfile(e.dataset.id));
 }
@@ -114,7 +122,7 @@ function openProfile(id) {
 function renderLocked(p) {
   const key = locks[p.id];
   $('app').innerHTML = `<div class="top"><button class="ghost" id="back">← Volver</button></div>
-    <div class="card"><b style="font-size:17px">🔒 Stand ${p.id} vendido</b>
+    <div class="card"><b style="font-size:17px">🔒 Stand ${esc(p.id)} vendido</b>
     <p class="muted" style="margin-top:6px">${esc(p.name)} ya está en funcionamiento. Está bloqueado para que no lo cambies por error.</p>
     ${key ? '<label>Clave</label><input id="pk" type="password">' : ''}
     <button id="go" style="margin-top:14px">${key ? 'Desbloquear' : 'Editar de todos modos'}</button></div>`;
@@ -180,8 +188,8 @@ function menuCard(d) {
     ${(c.items || []).map((it, ii) => `<div class="lrow"><div class="row"><input data-m="${ci}:${ii}:name" value="${esc(it.name)}" placeholder="Plato"><input data-m="${ci}:${ii}:price" value="${esc(it.price)}" placeholder="Precio" style="max-width:110px"></div><input data-m="${ci}:${ii}:desc" value="${esc(it.desc)}" placeholder="Descripción (opcional)"><div class="row"><label class="chk" style="font-size:13px"><input type="checkbox" data-mso="${ci}:${ii}" ${it.soldout ? 'checked' : ''}> Agotado</label><span class="grow"></span><button class="ghost" data-irm="${ci}:${ii}">✕</button></div></div>`).join('')}
     <button class="ghost" data-iadd="${ci}" style="margin-top:8px">+ Plato</button></div>`).join('')}
   <button class="ghost" id="cadd" style="margin-top:12px">+ Categoría</button>
-  <label>Importar desde texto</label><textarea id="mimp" placeholder="# Entradas&#10;Empanada de pino | Con aceitunas | 2500&#10;# Bebidas&#10;Jugo natural | 2000"></textarea>
-  <button class="ghost" id="mimpgo" style="margin-top:8px">Importar (reemplaza la carta)</button></div>`;
+  ${isAdmin ? `<label>Importar desde texto</label><textarea id="mimp" placeholder="# Entradas&#10;Empanada de pino | Con aceitunas | 2500&#10;# Bebidas&#10;Jugo natural | 2000"></textarea>
+  <button class="ghost" id="mimpgo" style="margin-top:8px">Importar (reemplaza la carta)</button>` : ''}</div>`;
 }
 function menuHandlers(d) {
   const M = () => (d.menu = d.menu && d.menu.categories ? d.menu : { categories: [] });
@@ -195,7 +203,7 @@ function menuHandlers(d) {
   q('[data-iadd]', b => b.onclick = () => { const c = M().categories[+b.dataset.iadd]; c.items = c.items || []; c.items.push({ name: '', desc: '', price: '' }); renderEdit(); });
   q('[data-irm]', b => b.onclick = () => { const [c, i] = b.dataset.irm.split(':'); M().categories[c].items.splice(+i, 1); renderEdit(); });
   on('cadd', () => { M().categories.push({ name: '', items: [{ name: '', desc: '', price: '' }] }); renderEdit(); });
-  on('mimpgo', () => {
+  if (isAdmin) on('mimpgo', () => {
     const cats = parseMenu($('mimp').value);
     if (!cats.length) return toast('No encontré platos. Usa "# Categoría" y "Plato | Descripción | Precio".', true);
     if (M().categories.length && !confirm('Esto reemplaza la carta actual. ¿Continuar?')) return;
@@ -207,13 +215,13 @@ function menuHandlers(d) {
 function renderEdit() {
   const d = draft, alias = isAdmin && d.same_as, own = owners.filter(o => o.profile_id === d.id);
   $('app').innerHTML = `<div class="top"><button class="ghost" id="back">← Volver</button><span class="grow"></span><a class="btn ghost" target="_blank" rel="noopener" href="${esc(pubUrl(d.id))}">Ver ↗</a><button class="ghost" id="copy">Copiar link</button></div>
-  <h1>Perfil ${d.id}</h1>
-  ${isAdmin ? `<div class="card"><label style="margin-top:0">Es igual a otro perfil (comparten contenido)</label><select id="same"><option value="">— No, tiene su propio contenido —</option>${profiles.filter(x => x.id !== d.id && !x.same_as).map(x => `<option value="${x.id}" ${d.same_as === x.id ? 'selected' : ''}>${x.id} · ${esc(x.name)}</option>`).join('')}</select></div>` : ''}
+  <h1>Perfil ${esc(d.id)}</h1>
+  ${isAdmin ? `<div class="card"><label style="margin-top:0">Es igual a otro perfil (comparten contenido)</label><select id="same"><option value="">— No, tiene su propio contenido —</option>${profiles.filter(x => x.id !== d.id && !x.same_as).map(x => `<option value="${esc(x.id)}" ${d.same_as === x.id ? 'selected' : ''}>${esc(x.id)} · ${esc(x.name)}</option>`).join('')}</select></div>` : ''}
   ${alias ? `<div class="card">Este perfil muestra el contenido del <b>${esc(d.same_as)}</b>. Para cambiar lo que dice, edita ese perfil.</div>` : `
   <div class="card"><label style="margin-top:0">Nombre</label><input data-k="name" value="${esc(d.name)}">
     <label>Descripción</label><textarea data-k="bio">${esc(d.bio)}</textarea>
     <label>Imagen</label>
-    ${d.image ? `<img src="${esc(d.image)}" alt="" style="width:72px;height:72px;border-radius:50%;object-fit:cover;border:2px solid #38bdf8;display:block;margin-bottom:8px" onerror="this.style.display='none'">` : ''}
+    ${safeImg(d.image) ? `<img src="${esc(safeImg(d.image))}" alt="" style="width:72px;height:72px;border-radius:50%;object-fit:cover;border:2px solid #38bdf8;display:block;margin-bottom:8px" onerror="this.style.display='none'">` : ''}
     <div class="row"><label class="btn ghost" style="margin:0;text-transform:none;letter-spacing:0;font-size:14px;color:#f8fafc">📷 Subir foto<input type="file" id="imgf" accept="image/*" hidden></label>${d.image ? '<button class="ghost" id="imgrm">Quitar</button>' : ''}</div>
     <label>…o pega un link</label><input data-k="image" value="${esc(d.image)}" placeholder="https://..."></div>
   ${isAdmin ? `<div class="card"><label style="margin-top:0">Redirección directa (opcional)</label><input data-k="direct_url" value="${esc(d.direct_url)}" placeholder="Si lo llenas, ignora los botones">
@@ -253,8 +261,22 @@ function renderEdit() {
   on('save', save);
 }
 async function save() {
-  const d = draft, f = { name: d.name, bio: d.bio, image: (d.image || '').trim(), links: d.links.filter(l => l.text && l.url).map(l => ({ text: l.text.trim(), url: norm(l.url) })), menu: cleanMenu(d.menu) };
-  if (isAdmin) { f.direct_url = norm(d.direct_url); f.same_as = d.same_as || null; f.sold = !!d.sold; }
+  const d = draft, links = [];
+  for (const l of d.links) {
+    const t = (l.text || '').trim();
+    if (!t && !(l.url || '').trim()) continue;
+    const u = normUrl(l.url);
+    if (!t || !u) return toast(`Revisa el botón "${t || '(sin texto)'}": necesita texto y un link https:// válido.`, true);
+    links.push({ text: t, url: u });
+  }
+  const img = (d.image || '').trim(), image = safeImg(img);
+  if (img && !image) return toast('La imagen debe ser un link https:// o una foto subida desde aquí.', true);
+  const f = { name: d.name, bio: d.bio, image, links, menu: cleanMenu(d.menu) };
+  if (isAdmin) {
+    const du = normUrl(d.direct_url);
+    if (du === null) return toast('El link de redirección debe ser un https:// válido.', true);
+    f.direct_url = du; f.same_as = d.same_as || null; f.sold = !!d.sold;
+  }
   $('save').disabled = true;
   const r = await sb.from('profiles').update(f).eq('id', d.id).select('id');
   if (r.error || !r.data.length) { $('save').disabled = false; return toast(r.error ? r.error.message : 'No tienes permiso para editar este perfil', true); }
