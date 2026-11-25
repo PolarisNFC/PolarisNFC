@@ -54,73 +54,23 @@
     ]
   },
   "005": {
-    "name": "Jugos Tropicales Fénix",
-    "bio": "Restaurante en terminal de buses de Valparaíso ",
-    "image": "https://plwmvqdztejlfjbjzfjv.supabase.co/storage/v1/object/public/images/005/1795379582110.jpg",
+    "name": "negocio",
+    "bio": "",
+    "image": "",
     "direct_url": "",
     "links": [
       {
         "url": "https://search.google.com/local/writereview?placeid=ChIJv8OuNQDhiZYRvOYRkg9IAxY",
         "text": "Déjanos una reseña en Google"
       }
-    ],
-    "menu": {
-      "categories": [
-        {
-          "name": "gfsdgdfg",
-          "items": [
-            {
-              "desc": "dfgdfg",
-              "name": "gfdgfd",
-              "price": "dfgdfg"
-            },
-            {
-              "desc": "dfgdfg",
-              "name": "dfgdfgdfg",
-              "price": "dfgdfg"
-            },
-            {
-              "desc": "dfgdfg",
-              "name": "dfgdfg",
-              "price": "dfgdfggf"
-            }
-          ]
-        },
-        {
-          "name": "dfgdfgdfg",
-          "items": [
-            {
-              "desc": "dgfdfgfd",
-              "name": "dfgdf",
-              "price": "gddfgdfgfd"
-            },
-            {
-              "desc": "dfgdfg",
-              "name": "dfgdfg",
-              "price": "dfgdfg"
-            }
-          ]
-        },
-        {
-          "name": "dfgdfgdfg",
-          "items": [
-            {
-              "desc": "dfgdfg",
-              "name": "dfgdfg",
-              "price": "dfgdfgd"
-            }
-          ]
-        }
-      ]
-    }
+    ]
   },
   "006": {
     "name": "Nombre Negocio 006",
     "bio": "Descripción corta",
     "image": "",
     "direct_url": "",
-    "links": [],
-    "same_as": "005"
+    "links": []
   },
   "007": {
     "name": "Nombre Negocio 007",
