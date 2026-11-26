@@ -1,170 +1,144 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Polaris NFC</title>
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
-            background-color: #0f172a; 
-            color: #f8fafc;
-            min-height: 100vh;
-            display: flex; 
-            justify-content: center; 
-            align-items: center;
-            padding: 30px 20px; 
-        }
-        .container { width: 100%; max-width: 380px; text-align: center; }
-        .profile-img { 
-            width: 96px; height: 96px; 
-            border-radius: 50%; 
-            object-fit: cover; 
-            margin-bottom: 16px; 
-            border: 3px solid #38bdf8; 
-            box-shadow: 0 10px 25px -5px rgba(56, 189, 248, 0.3); 
-        }
-        .profile-img.ph { display: inline-flex; align-items: center; justify-content: center; background: #1e293b; color: #38bdf8; font-size: 40px; font-weight: 700; }
-        h1 { font-size: 24px; font-weight: 700; color: #ffffff; margin-bottom: 8px; }
-        p.bio { font-size: 14px; color: #94a3b8; margin-bottom: 28px; line-height: 1.5; }
-        .links-container { display: flex; flex-direction: column; gap: 14px; }
-        .btn { 
-            display: block; 
-            background: #1e293b; 
-            color: #f8fafc; 
-            padding: 16px 20px; 
-            border-radius: 14px; 
-            text-decoration: none; 
-            font-weight: 600; 
-            font-size: 15px; 
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2); 
-            transition: all 0.2s ease; 
-            border: 1px solid #334155; 
-        }
-        .btn:active { transform: scale(0.97); background: #334155; }
-        .footer { font-size: 11px; color: #64748b; margin-top: 40px; letter-spacing: 0.5px; text-transform: uppercase; }
-        .card { background: #1e293b; padding: 24px; border-radius: 16px; border: 1px solid #334155; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#faf7f2">
+<title>Polaris NFC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Instrument+Sans:wght@400;500;600&display=swap" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="public.css">
+<style>
+  .id { text-align: center; }
+  .avatar { width: 104px; height: 104px; border-radius: 50%; object-fit: cover; display: block; margin: 0 auto 18px; background: var(--accent-soft); box-shadow: 0 0 0 4px var(--bg), 0 0 0 6px var(--accent); }
+  .avatar.ph { display: flex; align-items: center; justify-content: center; color: var(--accent-ink); font: 700 44px var(--serif); }
+  .id h1 { font-family: var(--serif); font-weight: 700; font-size: clamp(28px, 8vw, 34px); line-height: 1.1; letter-spacing: -.01em; overflow-wrap: anywhere; }
+  .id .bio { color: var(--muted); font-size: 15px; margin: 10px auto 0; max-width: 32ch; overflow-wrap: anywhere; }
+
+  .links { display: flex; flex-direction: column; gap: 12px; margin-top: 32px; }
+  .link { display: flex; align-items: center; justify-content: center; text-align: center; min-height: 56px; padding: 14px 18px; border-radius: 14px; background: var(--surface); color: var(--text); border: 1px solid var(--line); text-decoration: none; font-weight: 600; font-size: 16px; overflow-wrap: anywhere; transition: border-color .15s, transform .1s; }
+  .link:hover { border-color: var(--accent-ink); }
+  .link:active { transform: scale(.985); }
+  /* El primer botón es la acción principal del negocio (casi siempre la reseña): lleva el color de acento */
+  .link.primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+  .link.primary:hover { border-color: var(--text); }
+  .link.off { border-style: dashed; cursor: default; } /* solo en la vista previa: botón con enlace incompleto */
+
+  /* Acceso a la carta: usa la línea de puntos, igual que dentro de la carta */
+  .carta-link { display: flex; align-items: center; gap: 10px; min-height: 56px; padding: 14px 18px; margin-top: 4px; border-radius: 14px; background: var(--accent-soft); color: var(--text); text-decoration: none; transition: transform .1s; }
+  .carta-link .t { font: 700 19px var(--serif); }
+  .carta-link .v { font-weight: 600; color: var(--text); } /* sobre el fondo suave, el acento no siempre llega a 4.5:1 */
+  .carta-link:hover .v { text-decoration: underline; text-underline-offset: 3px; }
+  .carta-link:active { transform: scale(.985); }
+  .carta-link .dots { border-color: var(--accent-ink); opacity: .45; }
+
+  .redirect-note { background: var(--surface); border: 1px dashed var(--line); border-radius: 14px; padding: 18px; margin-top: 28px; text-align: center; color: var(--muted); font-size: 14px; overflow-wrap: anywhere; }
+  .landing h1 { font-family: var(--serif); font-size: 38px; font-weight: 700; line-height: 1.05; }
+  .landing p { color: var(--muted); margin-top: 14px; font-size: 16px; max-width: 34ch; }
+</style>
 </head>
 <body>
+<main class="shell" id="app" aria-live="polite">
+  <p class="loading">Cargando perfil…</p>
+</main>
 
-    <div class="container" id="app">
-        <p style="color: #94a3b8;">Cargando...</p>
+<script src="shared.js"></script>
+<script>
+const { esc, safeHttps, safeImg, initial, applyTheme, getProfile } = POLARIS;
+const params = new URLSearchParams(location.search);
+const id = params.get('id');
+const PREVIEW = params.get('preview') === '1';   // usado por la vista previa del editor
+const app = document.getElementById('app');
+
+// Si la foto no carga, muestra la inicial del negocio
+function fallbackImg(el) {
+  const d = document.createElement('div');
+  d.className = 'avatar ph'; d.setAttribute('aria-hidden', 'true');
+  d.textContent = el.dataset.initial || '?';
+  el.replaceWith(d);
+}
+
+function stateCard(title, text, action = '') {
+  app.innerHTML = `<div class="state"><h1>${esc(title)}</h1><p>${esc(text)}</p>${action}</div>
+    <footer class="foot"><a href="./">Polaris NFC</a></footer>`;
+}
+
+function render(p, pid) {
+  applyTheme(p.theme);
+
+  // Redirección directa: en la página real se va de inmediato; en la vista previa solo se avisa
+  if (p.direct_url && p.direct_url.trim()) {
+    const dest = safeHttps(p.direct_url);
+    if (PREVIEW) {
+      app.innerHTML = `<div class="state"><h1>${esc(p.name || 'Sin nombre')}</h1></div>
+        <p class="redirect-note">${dest ? `Este stand lleva directo a:<br><b>${esc(dest)}</b>` : 'El enlace de redirección no es válido.'}</p>`;
+      return;
+    }
+    if (!dest) return stateCard('Enlace no válido', 'Este stand tiene un enlace que no es seguro.');
+    location.replace(dest);
+    return;
+  }
+
+  document.title = p.name || 'Polaris NFC';
+  const img = safeImg(p.image), ini = initial(p.name);
+  const links = (p.links || []).filter(l => l && l.text && (PREVIEW || safeHttps(l.url)));
+  const hasMenu = p.menu && (p.menu.categories || []).some(c => (c.items || []).length);
+
+  app.innerHTML = `
+    <header class="id">
+      ${img
+        ? `<img src="${esc(img)}" class="avatar" width="104" height="104" alt="" fetchpriority="high" data-initial="${esc(ini)}" onerror="fallbackImg(this)">`
+        : `<div class="avatar ph" aria-hidden="true">${esc(ini)}</div>`}
+      <h1>${esc(p.name || 'Sin nombre')}</h1>
+      ${p.bio ? `<p class="bio">${esc(p.bio)}</p>` : ''}
+    </header>
+    <nav class="links" aria-label="Enlaces">
+      ${links.map((l, i) => {
+        const u = safeHttps(l.url), cls = 'link' + (i === 0 ? ' primary' : '');
+        return u
+          ? `<a class="${cls}" href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(l.text)}<span class="sr"> (se abre en otra pestaña)</span></a>`
+          : `<span class="${cls} off">${esc(l.text)}</span>`;
+      }).join('')}
+      ${hasMenu ? `<a class="carta-link" href="menu.html?id=${encodeURIComponent(pid || '')}"><span class="t">Carta</span><span class="dots" aria-hidden="true"></span><span class="v">Ver</span></a>` : ''}
+    </nav>
+    ${!links.length && !hasMenu ? '<p class="redirect-note">Este perfil todavía no tiene botones.</p>' : ''}
+    <footer class="foot"><a href="./">Polaris NFC</a></footer>`;
+}
+
+function landing() {
+  document.title = 'Polaris NFC';
+  app.innerHTML = `
+    <div class="landing" style="padding-top:12vh">
+      <h1>Polaris NFC</h1>
+      <p>Stands con NFC y código QR para negocios locales. Tus clientes acercan el teléfono y llegan directo a tus reseñas, tus redes o tu carta.</p>
     </div>
+    <footer class="foot">Polaris NFC</footer>`;
+}
 
-    <script>
-        const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+async function load() {
+  if (!id) return landing();
+  try {
+    const p = await getProfile(id);
+    if (!p) return stateCard('Perfil no activo', 'Este stand todavía no está configurado.');
+    render(p, id);
+  } catch (e) {
+    stateCard('No se pudo cargar', 'Revisa tu conexión a internet e intenta de nuevo.',
+      '<div class="act"><button class="btn-plain" onclick="location.reload()">Reintentar</button></div>');
+  }
+}
 
-        // Si no hay imagen (o no carga), muestra un círculo con la inicial del negocio
-        function fallbackImg(el) {
-            const d = document.createElement('div');
-            d.className = 'profile-img ph';
-            d.textContent = el.dataset.initial || '?';
-            el.replaceWith(d);
-        }
-
-        const SUPABASE_URL = 'https://plwmvqdztejlfjbjzfjv.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_QUBbXk2KJkCnr-ddVVGJRQ_2sdwK4VQ'; // clave pública, es seguro que esté aquí
-
-        // Fuente principal: base de datos. Si un perfil es "igual a" otro, usa el contenido del otro.
-        async function fromDb(id) {
-            const get = async pid => {
-                const r = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(pid)}&select=id,name,bio,image,direct_url,links,menu,same_as`,
-                    { headers: { apikey: SUPABASE_KEY }, signal: AbortSignal.timeout(4000) });
-                if (!r.ok) throw new Error('db ' + r.status);
-                return (await r.json())[0] || null;
-            };
-            let p = await get(id);
-            if (p && p.same_as) p = (await get(p.same_as)) || p;
-            return p;
-        }
-
-        // Respaldo: copia estática en el repo (por si la base de datos no responde)
-        async function fromSnapshot(id) {
-            const data = await (await fetch('clients.json?v=' + Date.now())).json();
-            let p = data[id];
-            if (p && p.same_as) p = data[p.same_as] || p;
-            return p || null;
-        }
-
-        async function getClient(id) {
-            try { return await fromDb(id); } catch (e) { return await fromSnapshot(id); }
-        }
-
-        // Solo se permiten enlaces https:// (y rutas locales img/...). Todo lo demás se descarta.
-        const safeHttps = u => { try { const x = new URL(String(u || '').trim()); return x.protocol === 'https:' && x.hostname.includes('.') && !x.username && !x.password ? x.href : ''; } catch (e) { return ''; } };
-        const safeImg = u => { u = String(u || '').trim(); return /^img\/[A-Za-z0-9_.\/-]+$/.test(u) && !u.includes('..') ? u : safeHttps(u); };
-
-        async function loadProfile() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const id = urlParams.get('id');
-
-            // SI NO HAY ID: Muestra la Landing Page Informativa de Polaris NFC
-            if (!id) {
-                document.title = "Polaris NFC";
-                document.getElementById('app').innerHTML = `
-                    <div class="card">
-                        <h1>Polaris NFC</h1>
-                        <p class="bio" style="margin-bottom: 0;">
-                            Soluciones de conectividad rápida e inteligente para negocios locales. 
-                            Conectamos clientes con tu información usando tecnología de proximidad NFC y códigos QR dinámicos.
-                        </p>
-                    </div>
-                    <div class="footer">POLARIS NFC • TECNOLOGÍA DE PROXIMIDAD</div>
-                `;
-                return;
-            }
-
-            // SI HAY ID: Busca los datos en el JSON
-            try {
-                const client = await getClient(id);
-                const app = document.getElementById('app');
-
-                if (!client) {
-                    app.innerHTML = `<div class="card"><h1>Perfil no activo</h1><p class="bio" style="margin-top:8px; margin-bottom:0;">Este dispositivo no está configurado aún.</p></div>`;
-                    return;
-                }
-
-                // SI TIENE URL DIRECTA (ej. Google Maps directo): Redirige de inmediato
-                if (client.direct_url && client.direct_url.trim() !== "") {
-                    const dest = safeHttps(client.direct_url);
-                    if (!dest) { app.innerHTML = `<div class="card"><h1>Enlace no válido</h1><p class="bio" style="margin-top:8px; margin-bottom:0;">Este stand tiene un enlace que no es seguro.</p></div>`; return; }
-                    window.location.replace(dest);
-                    return;
-                }
-
-                // SI ES UN HUB DE ENLACES: Muestra los botones
-                document.title = client.name;
-
-                let html = `
-                    ${safeImg(client.image)
-                        ? `<img src="${esc(safeImg(client.image))}" class="profile-img" alt="" data-initial="${esc((client.name || '?').trim().charAt(0).toUpperCase())}" onerror="fallbackImg(this)">`
-                        : `<div class="profile-img ph">${esc((client.name || '?').trim().charAt(0).toUpperCase())}</div>`}
-                    <h1>${esc(client.name)}</h1>
-                    <p class="bio">${esc(client.bio)}</p>
-                    <div class="links-container">
-                `;
-
-                if (client.links && client.links.length > 0) {
-                    client.links.forEach(link => {
-                        const u = safeHttps(link.url);
-                        if (u && link.text) html += `<a href="${esc(u)}" class="btn" target="_blank" rel="noopener noreferrer">${esc(link.text)}</a>`;
-                    });
-                }
-
-                if (client.menu && (client.menu.categories || []).some(c => (c.items || []).length)) {
-                    html += `<a href="menu.html?id=${encodeURIComponent(id)}" class="btn">📋 Ver menú</a>`;
-                }
-                html += `</div><div class="footer">POLARIS NFC</div>`;
-                app.innerHTML = html;
-
-            } catch (error) {
-                document.getElementById('app').innerHTML = `<div class="card"><h1>Error</h1><p class="bio" style="margin-bottom:0;">No se pudo cargar la información.</p></div>`;
-            }
-        }
-
-        loadProfile();
-    </script>
+if (PREVIEW) {
+  // La vista previa recibe el borrador desde admin.html (mismo sitio) y no navega fuera
+  addEventListener('message', e => {
+    if (e.origin !== location.origin || e.source !== parent || !e.data || e.data.type !== 'polaris-preview') return;
+    render(e.data.profile, e.data.id);
+  });
+  document.addEventListener('click', e => { if (e.target.closest('a')) e.preventDefault(); });
+  parent.postMessage({ type: 'polaris-preview-ready', page: 'profile' }, location.origin === 'null' ? '*' : location.origin);
+} else {
+  load();
+}
+</script>
 </body>
 </html>
