@@ -36,6 +36,9 @@
   .redirect-note { background: var(--surface); border: 1px dashed var(--line); border-radius: 14px; padding: 18px; margin-top: 28px; text-align: center; color: var(--muted); font-size: 14px; overflow-wrap: anywhere; }
   .landing h1 { font-family: var(--serif); font-size: 38px; font-weight: 700; line-height: 1.05; }
   .landing p { color: var(--muted); margin-top: 14px; font-size: 16px; max-width: 34ch; }
+  .landing .enter { margin-top: 36px; max-width: 340px; }
+  .landing .enter .link { justify-content: center; }
+  .landing .enter-hint { font-size: 14px; margin-top: 10px; }
 </style>
 </head>
 <body>
@@ -112,6 +115,10 @@ function landing() {
     <div class="landing" style="padding-top:12vh">
       <h1>Polaris NFC</h1>
       <p>Stands con NFC y código QR para negocios locales. Tus clientes acercan el teléfono y llegan directo a tus reseñas, tus redes o tu carta.</p>
+      <div class="enter">
+        <a class="link primary" href="admin.html">Ingresar</a>
+        <p class="enter-hint">¿Ya tienes un stand? Entra con tu usuario y clave para editar tus botones, tu carta y tus colores.</p>
+      </div>
     </div>
     <footer class="foot">Polaris NFC</footer>`;
 }

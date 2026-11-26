@@ -132,7 +132,7 @@
   .seg label:has(input:checked) { background: var(--soft); }
   .seg label:has(input:focus-visible) { outline: 3px solid var(--accent-ink); }
 
-  .owner { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
+  .owner { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
 
   /* vista previa */
   .preview { display: none; }
@@ -190,6 +190,16 @@ function normUrl(u) {                       // '' = vacío · null = inválido �
   if (/^[a-z][a-z0-9+.-]*:/i.test(u) && !/^https:\/\//i.test(u)) return null;   // javascript:, data:, mailto:, tel:...
   return safeHttps(/^https:\/\//i.test(u) ? u : 'https://' + u) || null;
 }
+/* ---- nombres de usuario ----
+   Supabase solo acepta correos, así que cada usuario ("Gimnasio 7") se guarda como un correo interno
+   (gimnasio7@polaris.local). Nunca se envían correos a esa dirección. Si escriben un correo real
+   (el del administrador, por ejemplo), se usa tal cual. */
+const LOGIN_DOMAIN = 'polaris.local';
+const slugUser = v => String(v || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
+const toLogin = v => { v = String(v || '').trim().toLowerCase(); return v.includes('@') ? v : (slugUser(v) ? slugUser(v) + '@' + LOGIN_DOMAIN : ''); };
+const userLabel = e => String(e || '').endsWith('@' + LOGIN_DOMAIN) ? e.slice(0, -LOGIN_DOMAIN.length - 1) : String(e || '');
+// Cliente aparte para crear cuentas sin cerrar la sesión del administrador
+const sbNew = () => supabase.createClient(POLARIS.SUPABASE_URL, POLARIS.SUPABASE_KEY, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false, storageKey: 'polaris-alta' } });
 const pubUrl = id => location.href.split('#')[0].split('?')[0].replace(/[^/]*$/, '') + 'index.html?id=' + encodeURIComponent(id);
 function toast(m, err) { const t = $('toast'); t.textContent = m; t.className = (err ? 'err ' : '') + 'show'; clearTimeout(toast.t); toast.t = setTimeout(() => t.className = '', 4000); }
 function busy(id, b, label) { const e = $(id); if (!e) return; e.disabled = b; if (label) { e.dataset.l = e.dataset.l || e.textContent; e.textContent = b ? label : e.dataset.l; } }
@@ -208,28 +218,21 @@ async function verifyPass(p, st) { const [, s, h] = String(st || '').split('$');
 function renderLogin() {
   $('app').innerHTML = `<main class="login"><p class="brand">Polaris NFC</p><h1>Panel de stands</h1>
     <form class="card" id="lf" novalidate>
-      <label for="em">Correo</label><input id="em" type="email" autocomplete="email" required>
+      <label for="em">Usuario</label><input id="em" autocomplete="username" autocapitalize="off" spellcheck="false" required aria-describedby="em-hint">
+      <p class="hint" id="em-hint">El nombre de tu negocio, tal como te lo entregamos. Por ejemplo: Gimnasio 7.</p>
       <div class="field"><label for="pw">Clave</label><input id="pw" type="password" autocomplete="current-password" required></div>
-      <div class="row wrap"><button type="submit" class="primary" id="in">Entrar</button><button type="button" id="up">Crear cuenta</button></div>
-      <p class="muted">¿Eres cliente? Crea tu cuenta y avísale al administrador el correo que usaste para que te dé acceso a tu perfil.</p>
-    </form></main>`;
-  const cred = () => ({ email: $('em').value.trim(), password: $('pw').value });
-  const ok = () => { const c = cred(); if (!c.email || !c.password) { toast('Escribe tu correo y tu clave.', true); return null; } return c; };
+      <div class="row wrap"><button type="submit" class="primary" id="in">Entrar</button></div>
+      <p class="muted">¿Olvidaste tu clave o no tienes usuario? Escríbele a Polaris NFC y te la cambiamos.</p>
+    </form><p class="muted" style="margin-top:16px;text-align:center"><a href="./">Volver al inicio</a></p></main>`;
   $('lf').onsubmit = async e => {
-    e.preventDefault(); const c = ok(); if (!c) return;
+    e.preventDefault();
+    const c = { email: toLogin($('em').value), password: $('pw').value };
+    if (!c.email || !c.password) return toast('Escribe tu usuario y tu clave.', true);
     busy('in', true, 'Entrando…');
     const r = await sb.auth.signInWithPassword(c);
     busy('in', false);
-    r.error ? toast('Correo o clave incorrectos.', true) : boot(r.data.user);
+    r.error ? toast('Usuario o clave incorrectos.', true) : boot(r.data.user);
   };
-  on('up', async () => {
-    const c = ok(); if (!c) return;
-    busy('up', true, 'Creando…');
-    const r = await sb.auth.signUp(c);
-    busy('up', false);
-    if (r.error) return toast(r.error.message, true);
-    r.data.session ? boot(r.data.user) : toast('Cuenta creada. Revisa tu correo para confirmarla.');
-  });
 }
 async function boot(user) {
   me = user;
@@ -266,7 +269,7 @@ async function load() {
 
 /* ---- lista ---- */
 const badge = p => p.sold ? 'Vendido' + (locks[p.id] ? ', con clave' : '') : p.same_as ? 'Igual al ' + esc(p.same_as) : p.direct_url ? 'Redirección directa' : ((p.links || []).length ? (p.links.length === 1 ? '1 botón' : p.links.length + ' botones') : 'Sin botones');
-const topbar = () => `<header class="top"><span class="brand">Polaris NFC</span><span class="grow"></span><span class="muted who">${esc(me.email)}${isAdmin ? ' · admin' : ''}</span><button class="ghost sm" id="out">Salir</button></header>`;
+const topbar = () => `<header class="top"><span class="brand">Polaris NFC</span><span class="grow"></span><span class="muted who">${esc(userLabel(me.email))}${isAdmin ? ' · admin' : ''}</span><button class="ghost sm" id="out">Salir</button></header>`;
 function renderList() {
   draft = null; unlocked = null; document.body.classList.remove('dirty');
   $('app').innerHTML = `${topbar()}<main class="wrap-main">
@@ -281,7 +284,7 @@ function fillList() {
   const q = query.trim().toLowerCase();
   const list = profiles.filter(p => !q || String(p.id).toLowerCase().includes(q) || String(p.name || '').toLowerCase().includes(q));
   $('items').innerHTML = !profiles.length
-    ? `<li class="empty">Tu cuenta aún no tiene stands asignados. Pídele al administrador que te dé acceso con el correo ${esc(me.email)}.</li>`
+    ? `<li class="empty">Tu cuenta aún no tiene stands asignados. Pídele a Polaris NFC que te dé acceso a tu usuario (${esc(userLabel(me.email))}).</li>`
     : !list.length ? `<li class="empty">Ningún stand coincide con "${esc(query)}".</li>`
     : list.map(p => `<li><button class="item" data-id="${esc(p.id)}"><span class="sid">${esc(p.id)}</span><span class="grow"><b>${esc(p.name || 'Sin nombre')}</b><span class="muted">${badge(p)}</span></span><span class="chev" aria-hidden="true">›</span></button></li>`).join('');
   qa('.item').forEach(e => e.onclick = () => openProfile(e.dataset.id));
@@ -614,9 +617,12 @@ const PANELS = {
       <div class="field"><label class="chk"><input type="checkbox" id="sold" ${d.sold ? 'checked' : ''}> Marcar como vendido (bloquea la edición por error)</label></div>
       ${d.sold ? `<div class="field"><label for="f-pass">Clave de protección (opcional)</label><input id="f-pass" data-k="_pass" type="password" autocomplete="new-password" placeholder="${locks[d.id] ? 'Vacío = mantener la actual' : 'Una clave que recuerdes'}">${locks[d.id] ? '<div class="row" style="margin-top:8px"><button type="button" class="ghost danger" id="rmlock">Quitar clave</button></div>' : ''}</div>` : ''}
       <h3>Clientes con acceso</h3>
-      ${own.map(o => `<div class="owner"><span class="grow">${esc(o.email)}</span><button type="button" class="ghost sm danger" data-unlink="${esc(o.email)}">Quitar acceso</button></div>`).join('') || '<p class="muted" style="margin-top:8px">Nadie todavía.</p>'}
-      <div class="field"><label for="oem">Dar acceso por correo</label><div class="row"><input id="oem" type="email" placeholder="correo@cliente.cl"><button type="button" id="link">Dar acceso</button></div>
-      <p class="hint">El cliente debe haber creado su cuenta antes con ese correo.</p></div>`;
+      ${own.map((o, i) => `<div class="owner"><span class="grow"><b>${esc(userLabel(o.email))}</b></span><button type="button" class="ghost sm" data-pw="${i}" aria-expanded="false" aria-controls="opw${i}">Cambiar clave</button><button type="button" class="ghost sm danger" data-unlink="${esc(o.email)}">Quitar acceso</button></div>
+        <div class="field" id="opw${i}" hidden><label for="opwi${i}">Nueva clave para ${esc(userLabel(o.email))}</label><div class="row"><input id="opwi${i}" type="text" autocomplete="off" spellcheck="false" minlength="6"><button type="button" class="primary" data-setpw="${i}" data-email="${esc(o.email)}">Guardar clave</button></div><p class="hint">Mínimo 6 caracteres. Entrégasela al cliente.</p></div>`).join('') || '<p class="muted" style="margin-top:8px">Nadie todavía.</p>'}
+      <h3>Dar acceso a un cliente</h3>
+      <div class="field"><label for="oem">Usuario</label><input id="oem" autocapitalize="off" spellcheck="false" autocomplete="off" placeholder="Gimnasio 7" aria-describedby="oem-hint"><p class="hint" id="oem-hint">Al entrar no importan mayúsculas, espacios ni tildes: "Gimnasio 7" y "gimnasio7" son el mismo usuario.</p></div>
+      <div class="field"><label for="opass">Clave</label><input id="opass" type="text" autocomplete="off" spellcheck="false" minlength="6" aria-describedby="opass-hint"><p class="hint" id="opass-hint">Para un usuario nuevo, mínimo 6 caracteres. Si el usuario ya existe (tiene otro stand), déjala vacía.</p></div>
+      <div class="row" style="margin-top:12px"><button type="button" class="primary" id="link">Dar acceso</button></div>`;
     },
     bind: () => {
       const d = draft;
@@ -626,10 +632,32 @@ const PANELS = {
       $('sold').onchange = e => { d.sold = e.target.checked; rerender('sold'); };
       on('rmlock', async () => { await sb.from('profile_locks').delete().eq('profile_id', d.id); delete locks[d.id]; toast('Clave quitada.'); rerender(); });
       on('link', async () => {
-        busy('link', true);
-        const r = await sb.rpc('admin_link_owner', { p_email: $('oem').value, p_profile: d.id });
+        const email = toLogin($('oem').value), pass = $('opass').value;
+        if (!email) { $('oem').focus(); return toast('Escribe el nombre de usuario.', true); }
+        if (pass && pass.length < 6) { $('opass').focus(); return toast('La clave debe tener al menos 6 caracteres.', true); }
+        busy('link', true, 'Dando acceso…');
+        if (pass) {   // crea la cuenta (si ya existe, solo se le da acceso)
+          const s = await sbNew().auth.signUp({ email, password: pass });
+          if (s.error && !/already|registered|exists/i.test(s.error.message)) { busy('link', false); return toast('No se pudo crear el usuario: ' + s.error.message, true); }
+        }
+        const r = await sb.rpc('admin_link_owner', { p_email: email, p_profile: d.id });
         busy('link', false);
-        r.error ? toast(r.error.message, true) : (toast('Acceso dado.'), await loadOwners(), rerender());
+        if (r.error) return toast(pass ? r.error.message : 'Ese usuario no existe. Escribe una clave para crearlo.', true);
+        toast(`Listo. ${userLabel(email)} ya puede entrar.`); await loadOwners(); rerender();
+      });
+      qa('[data-pw]').forEach(b => b.onclick = () => {
+        const box = $('opw' + b.dataset.pw), open = box.hidden;
+        box.hidden = !open; b.setAttribute('aria-expanded', open);
+        if (open) $('opwi' + b.dataset.pw).focus();
+      });
+      qa('[data-setpw]').forEach(b => b.onclick = async () => {
+        const inp = $('opwi' + b.dataset.setpw), pass = inp.value;
+        if (pass.length < 6) { inp.focus(); return toast('La clave debe tener al menos 6 caracteres.', true); }
+        b.disabled = true;
+        const r = await sb.rpc('admin_set_password', { p_email: b.dataset.email, p_password: pass });
+        b.disabled = false;
+        if (r.error) return toast(/admin_set_password|function/i.test(r.error.message) ? 'Falta activar el cambio de clave en Supabase (ver instrucciones).' : r.error.message, true);
+        toast('Clave cambiada.'); inp.value = ''; $('opw' + b.dataset.setpw).hidden = true;
       });
       qa('[data-unlink]').forEach(b => b.onclick = async () => {
         const r = await sb.rpc('admin_unlink_owner', { p_email: b.dataset.unlink, p_profile: d.id });
